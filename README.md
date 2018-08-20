@@ -18,3 +18,10 @@ Installation prerequisite
 
     create database ds_lab CHARACTER SET utf8 COLLATE utf8_general_ci;
 
+### Step 4: Migration
+
+    python manage.py migrate
+
+### Step 5: generating data
+
+    python manage.py adddummy 10000

@@ -2,8 +2,8 @@ import random
 from itertools import islice
 from faker import Faker
 
-from django.test import TestCase
-from .models import *
+from django.core.management.base import BaseCommand, CommandError
+from ds.models import LeaderBoard, ProgrammingLanguage
 
 fak = Faker()
 PROGRAMMING_LANGUAGE = ["python", "c", "c++", "java", "R", "GO", "bash", "PyPy", "Pearl", "C#", "swift", "kotlin"]
@@ -48,6 +48,14 @@ class GenerateData(object):
             LeaderBoard.objects.bulk_create(batch, batch_size)
 
 
-if __name__ == "__main__":
-    g = GenerateData(1000)
-    g.add_data_to_db()
+class Command(BaseCommand):
+    help = 'Closes the specified poll for voting'
+
+    def add_arguments(self, parser):
+        parser.add_argument('batch_size', nargs='+', type=int)
+
+    def handle(self, *args, **options):
+        batch_size = options['batch_size'][0]
+        g = GenerateData(batch_size)
+        g.add_data_to_db()
+        self.stdout.write(self.style.SUCCESS('Successfully created dummy entries'))
