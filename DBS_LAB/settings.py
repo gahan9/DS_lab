@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ds',
+    'django-console',
 ]
 
 MIDDLEWARE = [
@@ -124,4 +125,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 COMPANY_TITLE = "DS LAB"
+
+# console setting
+SECURE_CONSOLE = False  # False to allow http
+CONSOLE_WHITELIST = ["127.0.0.1"]
