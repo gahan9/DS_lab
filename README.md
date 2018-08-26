@@ -22,6 +22,6 @@ Installation prerequisite
 
     python manage.py migrate
 
-### Step 5: generating data
+### Step 5: Generating data
 
     python manage.py adddummy 10000
