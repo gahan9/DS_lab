@@ -8,7 +8,13 @@ Installation prerequisite
 - mysql
 - python [mysqlclient](https://pypi.org/project/mysqlclient/)
 
-        pip install mysqlclient
+also you might need to install
+
+    $ sudo apt-get install libmysqlclient-dev
+
+before running below command
+
+    pip install mysqlclient
 
 ### Step 2: Install Project requirements
 
