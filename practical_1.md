@@ -95,7 +95,7 @@ Index used : (No index used) (possible key on language_id)
 
 ### Query
 
-    select * from ds_leaderboard where country='India';
+    select * from ds_leaderboard ignore index(ctry) where country='India';
 
 |   |   |
 |---|---|
