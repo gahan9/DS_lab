@@ -44,35 +44,43 @@ a) Database Structure
 
 b) Impact of index
 ------------------
-### Query
+### Case 1
 
     select * from ds_leaderboard;
-Query time: 1.947 s  
-Index used : No index to be used because we are loading all data of all attribute(column)
+|  |  |
+|---|---|
+| Query time | 1.947 s  
+| Index used | No index to be used because we are loading all data of all attribute(column)
 
-### Query
+### Case 2 with index
 
     select * from ds_leaderboard where language_id=1;
-Query time: 235 ms  
-No. of records: 33243  
-Index used : index on attribute language_id  
+|  |  |
+|---|---|
+| Query time | 235 ms  
+| No. of records | 33243  
+| Index used | index on attribute language_id  
 
-### Query
+### Case 2 without index
 
     select * from ds_leaderboard ignore index(pl) where language_id=1;
-Query time: 287 ms  
-No. of records: 33243  
-Index used : (No index) ignoring index on attribute language_id  
+|  |  |
+|---|---|
+| Query time | 287 ms  
+| No. of records | 33243  
+| Index used | (No index) ignoring index on attribute language_id  
 
-### Query
+### Case 3 with no index
 
     select name,language_id from ds_leaderboard where language_id between 1 and 5;
-Query time: 226 ms  
-No. of records: 166490  
-Index used : (No index used) (possible key on language_id)  
+|  |  |
+|---|---|
+| Query time | 226 ms  
+| No. of records | 166490  
+| Index used | (No index used) (possible key on language_id)  
 
 
-### Query
+### Case 3 with index on language_id
 
     select name,language_id from ds_leaderboard use index(pl) where language_id between 1 and 5;
 
@@ -80,7 +88,7 @@ Index used : (No index used) (possible key on language_id)
 |---|---|
 | Query time | 206 ms |  
 | No. of records | 166490 |  
-| Index used | forced to use index on language_id |  
+| Index used | forced to use index on language_id (pl) |  
 
 
 ### Query
