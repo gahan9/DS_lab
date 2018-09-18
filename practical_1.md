@@ -103,3 +103,47 @@ Index used : (No index used) (possible key on language_id)
 | No. of records | 1597 |  
 | Index used | forced to ignore index on country |  
 
+
+### Query
+
+    select * from ds_leaderboard where country='India' and language_id=1;
+
+|   |   |
+|---|---|
+| Query time | 16 ms |  
+| No. of records | 143 |  
+| Index used | Using intersect(pl,ctry); index of language_id and country |  
+
+
+### Query
+
+    select * from ds_leaderboard ignore index(ctry) where country='India' and language_id=1;
+
+|   |   |
+|---|---|
+| Query time | 42 ms |  
+| No. of records | 143 |  
+| Index used | Using index on language_id |  
+
+
+### Query
+
+    select * from ds_leaderboard ignore index(pl) where country='India' and language_id=1;
+
+|   |   |
+|---|---|
+| Query time | 5 ms |  
+| No. of records | 143 |  
+| Index used | Using index on country |  
+
+
+### Query
+
+    select * from ds_leaderboard ignore index(pl,ctry) where country='India' and language_id=1;
+
+|   |   |
+|---|---|
+| Query time | 142 ms |  
+| No. of records | 143 |  
+| Index used | No index used; Forced to ignore index |  
+
