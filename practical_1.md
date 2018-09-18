@@ -91,7 +91,7 @@ b) Impact of index
 | Index used | forced to use index on language_id (pl) |  
 
 
-### Query
+### Case 4 using index on country
 
     select * from ds_leaderboard where country='India';
 
@@ -101,7 +101,7 @@ b) Impact of index
 | No. of records | 1597 |  
 | Index used | used index on country |  
 
-### Query
+### Case 4 without index
 
     select * from ds_leaderboard ignore index(ctry) where country='India';
 
@@ -145,7 +145,7 @@ b) Impact of index
 | Index used | Using index on country |  
 
 
-### Query
+### Case 5 without index
 
     select * from ds_leaderboard ignore index(pl,ctry) where country='India' and language_id=1;
 
