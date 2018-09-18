@@ -85,11 +85,21 @@ Index used : (No index used) (possible key on language_id)
 
 ### Query
 
-    select name,language_id from ds_leaderboard use index(pl) where language_id between 1 and 5;
+    select * from ds_leaderboard where country='India';
 
-|  |  |
+|   |   |
 |---|---|
-| Query time | 206 ms |  
-| No. of records | 166490 |  
-| Index used | forced to use index on language_id |  
+| Query time | 20 ms |  
+| No. of records | 1597 |  
+| Index used | used index on country |  
+
+### Query
+
+    select * from ds_leaderboard where country='India';
+
+|   |   |
+|---|---|
+| Query time | 155 ms |  
+| No. of records | 1597 |  
+| Index used | forced to ignore index on country |  
 
