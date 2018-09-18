@@ -1,4 +1,4 @@
-﻿[Practical 1](https://github.com/gahan9/DS_lab/blob/master/practical_1.md)
+[Practical 1](https://github.com/gahan9/DS_lab/blob/master/practical_1.md)
 =========== 
 > a) Import Database, understand Query execution plan using SQL Yog    
 b) Analyze impact of index , type of index on query performance   
@@ -164,5 +164,3 @@ Summary
 In records of `4,00,000` entries `33,243` entries having *language_id* equals to `1` (*As in Case 2*) and just `1597` entries having *country* equals to `India` (*As in Case 4*)and only `143` entries having both (*As in Case 5*).   
 
 In `case 5.1 ` query engine choose to use index of both attribute language_id (pl) and country (ctry) and intersection of it is displayed which took about `11 ms` whereas when we forced to use only index on *country* the result took only `4 ms` but for only using index on *language_id*  it costs `148 ms` 
-
-[1]  https://github.com/gahan9/DS_lab/blob/master/practical_1.md
