@@ -1,3 +1,5 @@
+#!usr/bin/python3
+# coding=utf-8
 """
 some terminology of python:
 _var => (convention only) underscore prefix is just a hint to programmer that a variable or method starting with a single underscore is intended for internal use
@@ -7,10 +9,31 @@ __var => “dunders” (name mangling) rewrite the attribute name in order to av
 """
 
 import math
+import logging
+import os
+from datetime import datetime
 from bisect import bisect_right, bisect_left
 from collections import deque
 
 __author__ = "Gahan Saraiya"
+
+LOG_DIR = "."
+logger = logging.getLogger('bPlusTree')
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s',
+                    datefmt='[%Y-%d-%m_%H.%M.%S]',
+                    filename=os.path.join(LOG_DIR, 'b_plus_tree_{}.log'.format(datetime.now().strftime('%Y-%d-%m_%H.%M.%S'))),
+                    filemode='w')
+ch = logging.StreamHandler()  # create console handler with a higher log level
+ch.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s')
+# fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(ch)
+log = logger.debug
+log = print
 
 
 class InternalNode(object):
@@ -60,6 +83,9 @@ class LeafNode(object):
         self.sibling = None  # sibling node to point
         self.parent = None  # parent node - None for root node
 
+    def __repr__(self):
+        return " | ".join(map(str, self.keys))
+
     @property
     def is_leaf(self):
         return True
@@ -101,55 +127,140 @@ class BPlusTree(object):
                 else:
                     return self.search_node(start_node.children[index+1], value)
 
-    def search(self, value):
-        """
-        :param value: value to be search
-        :return: leaf node containing value else False
-        tuple of 3 values (status, msg, node)
-        0 - status of success or failure
-        1 - message status
-        2 - last explored node
-        """
-        status, msg, node = None, "", None
-        if not self.root.keys:
-            # initially no keys/data value - initialize root first
-            # msg += "No data in tree..!!"
-            status, msg, node = False, "No data in tree..!!", self.root
+    def search_key(self, node, key):
+        if node.is_leaf:
+            _index = bisect_left(node.keys, key)
+            return _index, node
         else:
-            node = self.search_node(self.root, value)
-            if node:
-                # if current node is leaf then check if value exist in current node or not
+            _index = bisect_right(node.keys, key)
+            return self.search_key(node.children[_index], key)
+
+    def search(self, start=None, end=None):
+        """
+
+        :param start: specify start node to search range for
+        :param end: specify end node for range search
+        :return:
+        """
+        _result = []
+        node = self.__root
+        leaf = self.__leaf
+
+        if start is None:
+            while True:
+                for val in leaf.keys:
+                    if val <= end:
+                        _result.append(val)
+                    else:
+                        return _result
+                if leaf.sibling is None:
+                    return _result
+                else:
+                    leaf = leaf.sibling
+        elif end is None:
+            _index, leaf = self.search_key(node, start)
+            _result.extend(leaf.keys[_index:])  # equivalent to _result + leaf
+            while True:
+                if leaf.sibling is None:
+                    return _result
+                else:
+                    leaf = leaf.sibling
+                    _result.extend(leaf.keys)
+        else:
+            if start == end:
+                _index, _node = self.search_key(node, start)
                 try:
-                    node.keys.index(value)
-                    status, msg, node = True, "Value found in root node", node
-                except ValueError:
-                    status, msg, node = False, "Value not found", self.root
-        return status, msg, node
+                    if _node.keys[_index] == start:
+                        _result.append(_node.keys[_index])
+                        return _result
+                    else:
+                        return _result
+                except IndexError:
+                    return _result
+            else:
+                _index1, _node1 = self.search_key(node, start)
+                _index2, _node2 = self.search_key(node, end)
+                if _node1 is _node2:
+                    if _index1 == _index2:
+                        return _result
+                    else:
+                        _result.extend(_node1.keys[_index1:_index2])
+                        return _result
+                else:
+                    _result.extend(_node1.keys[_index1:])
+                    node_ = _node1
+                    while True:
+                        if _node1.sibling == _node2:
+                            _result.extend(_node2.keys[:_index2 + 1])
+                            return _result
+                        else:
+                            _result.extend(node_.sibling.keys)
+                            node_ = node_.sibling
 
-    def split(self, node):
-        center_idx = len(node.keys) // 1  # center node index
-        median = node.keys[center_idx - 1]  # key to be shift to upper level
-        sibling1_node, sibling2_node = BtreeNode(), BtreeNode()
-        if not node.parent:
-            # split root node for overflow
-            node.keys = [median]
-            node.children = [sibling1_node, sibling2_node]
-            sibling1_node.parent = node
-            sibling2_node.parent = node
-            sibling1_node.keys, sibling2_node.keys = node.keys[:center_idx], node.keys[center_idx:]
+    def traverse(self):
+        _result, _leaf = [], self.__leaf
+        while True:
+            _result.extend(_leaf.keys)
+            if _leaf.sibling is None:
+                return _result
+            else:
+                _leaf = _leaf.sibling
 
-    def split_leaf(self, node):
-        mid = (self.degree + 1) // 2
+    def pretty_print(self):
+        print("B+ Tree: \n")
+        queue = deque()
+        height = 0
+        queue.append([self.__root, height])
+        while True:
+            try:
+                node, height_ = queue.popleft()
+            except IndexError:
+                return
+            else:
+                if not node.is_leaf:
+                    print("{} The height is {}".format(node.keys, height_))
+                    if height_ == height:
+                        height += 1
+                    queue.extend([[i, height] for i in node.children])
+                else:
+                    print("{} leaf is >> {}".format([i for i in node.keys], height_))
+
+    def split_internal_node(self, node):
+        mid = self.degree // 2  # integer division in python3
+        new_node = InternalNode(self.degree)
+        new_node.keys = node.keys[mid:]
+        new_node.children = node.children[mid:]
+        new_node.parent = node.parent
+        for child in new_node.children:
+            child.parent = new_node  # assign parent to every new child of current node
+        if node.parent is None:  # again Note that None and 0 are not same but both treated as False in boolean
+            # need to make new root if we are to split root node
+            new_root = InternalNode(self.degree)
+            new_root.keys = [node.keys[mid - 1]]
+            new_root.children = [node, new_node]
+            node.parent = new_node.parent = new_root  # set parent of newly created node
+            self.__root = new_root  # set new ROOT node
+        else:
+            # if node is not root internal node
+            _index = node.parent.children.index(node)
+            node.parent.keys.insert(_index, node.keys[mid - 1])
+            node.parent.children.insert(_index + 1, new_node)
+        node.keys = node.keys[:mid - 1]
+        node.children = node.children[:mid]
+        return node.parent
+
+    def split_leaf_node(self, node):
+        mid = (self.degree + 1) // 2  # integer division in python3
         new_leaf = LeafNode(self.degree)
         new_leaf.keys = node.keys[mid:]
         if node.parent is None:  # None and 0 are to be treated as different value
             parent_node = InternalNode(self.degree)  # create new parent for node
-            parent_node.keys, parent_node.kids = [node.keys[mid].key], [node, new_leaf]
+            parent_node.keys, parent_node.kids = [node.keys[mid]], [node, new_leaf]
             node.par = new_leaf.par = parent_node
             self.__root = parent_node
         else:
             i = node.parent.children.index(node)
-            node.parent.keys.insert(i, node.keys[mid].key)
+            node.parent.keys.insert(i, node.keys[mid])
             node.parent.children.insert(i + 1, new_leaf)
             new_leaf.parent = node.parent
         node.keys = node.keys[:mid]
@@ -157,47 +268,98 @@ class BPlusTree(object):
 
     def insert(self, value):
         node = self.__root
+        log("parent:{} leaf:{} node:{}\tkeys:{}".format(node.parent, node.is_leaf, node, node.keys))
+        self.insert_node(node, value)
 
-        if node.is_leaf:
-            idx = bisect_right(node.keys, value)  # bisect and get index value of where to insert value in node.keys
-            node.keys.insert(idx, value)
+    def insert_node(self, node, value):
+        if node.is_leaf:  # logic for leaf node
+            _index = bisect_right(node.keys, value)  # bisect and get index value of where to insert value in node.keys
+            node.keys.insert(_index, value)
             if not node.is_balanced:
-                self.split_leaf(node)
+                self.split_leaf_node(node)
             else:
                 return
-        else:
+        else:  # logic for internal node
             if not node.is_balanced:
-                self.insert(self.split(node))
+                self.insert(self.split_internal_node(node))
             else:
                 _index = bisect_right(node.keys, value)
                 self.insert(node.children[_index])
 
-        if not self.root.keys:
-            # initially no keys/data value - initialize root
-            self.root.keys.insert(0, value)
-            status, msg, node = True, "LOL!! it was first value!!", self.root
+    def merge(self, node, index):
+        if node.children[index].is_leaf:
+            node.children[index].keys = node.children[index].keys + node.children[index + 1].keys
+            node.children[index].sibling = node.children[index + 1].sibling
         else:
-            status, msg, node = self.search(value)
-            for index in range(len(node.keys)):
-                if value < node.keys[index]:  # key is greater than value to be search
-                    node.keys.insert(index, value)
-                elif node.keys[index] <= value < node.keys[index + 1]:
-                    node.keys.insert(index, value)
-                else:
-                    node.keys.insert(index+1, value)
-            if node.is_balanced:
-                status, msg = True, "Balanced - No Split Require"
+            node.children[index].keys = node.children[index].keys + [node.keys[index]] + node.children[index + 1].keys
+            node.children[index].children = node.children[index].children + node.children[index + 1].children
+        node.children.remove(node.children[index + 1])
+        node.keys.remove(node.children[index])
+        if node.keys:
+            return node
+        else:
+            node.children[0].parent = None
+            self.__root = node.children[0]
+            del node
+            return self.__root
+
+    @staticmethod
+    def traverse_left_to_right(node, index):
+        if node.children[index].is_leaf:
+            node.children[index + 1].keys.insert(0, node.children[index].keys[-1])
+            node.children[index].keys.pop()
+            node.keys[index] = node.children[index + 1].keys[0]
+        else:
+            node.children[index + 1].children.insert(0, node.children[index].children[-1])
+            node.children[index].children[-1].parent = node.children[index + 1]
+            node.children[index + 1].keys.insert(0, node.keys[index])
+            node.children[index].children.pop()
+            node.children[index].keys.pop()
+
+    @staticmethod
+    def traverse_right_to_left(node, index):
+        if node.children[index].is_leaf:
+            node.children[index].keys.append(node.children[index + 1].keys[0])
+            node.children[index + 1].keys.remove(node.children[index + 1].keys[0])
+            node.keys[index] = node.children[index + 1].keys[0]
+        else:
+            node.children[index].children.append(node.children[index + 1].children[0])
+            node.children[index + 1].children[0].parent = node.children[index]
+            node.children[index].keys.append(node.keys[index])
+            node.keys[index] = node.children[index + 1].children[0]
+            node.children[index + 1].children.remove(node.children[index + 1].children[0])
+            node.children[index + 1].keys.remove(node.children[index + 1].keys[0])
+
+    def delete(self, value, node=None):
+        node = self.__root if not node else node
+        if node.is_leaf:
+            _index = bisect_left(node.keys, value)
+            try:
+                node_ = node.keys[_index]
+            except IndexError:
+                return -1
             else:
-                msg = "splitting require"
-                self.split(node)
-        print(msg, node.keys)
-        return status, msg, node
+                if node_ != value:
+                    return -1
+                else:
+                    node.keys.remove(value)
+                    return 0
+        else:
+            _index = bisect_right(node.keys, value)
+            if _index == len(node.keys):
+                if not node.children[_index].is_empty:
+                    return self.delete(node.children[_index], value)
+                elif not node.children[_index - 1].is_empty:
+                    self.traverse_left_to_right(node, _index - 1)
+                    return self.delete(node.children[_index], value)
+                else:
+                    return self.delete(self.merge(node, _index), value)
 
 
 if __name__ == "__main__":
-    b = BPlusTree()
-    b.insert(5)
-    b.insert(1)
-    b.insert(15)
-    print(b)
-    print(b)
+    # test_lis = [0, 1, 11, 1, 2]
+    # test_lis = [i for i in range(1, 4 + 1)]
+    b = BPlusTree(degree=4)
+    for val in range(1, 6):
+        b.insert(val)
+    # b.pretty_print()
