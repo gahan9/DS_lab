@@ -225,66 +225,69 @@ class BPlusTree(object):
                 else:
                     print("{} leaf is >> {}".format([i for i in node.keys], height_))
 
-    def split_internal_node(self, node):
-        mid = self.degree // 2  # integer division in python3
-        new_node = InternalNode(self.degree)
-        new_node.keys = node.keys[mid:]
-        new_node.children = node.children[mid:]
-        new_node.parent = node.parent
-        for child in new_node.children:
-            child.parent = new_node  # assign parent to every new child of current node
-        if node.parent is None:  # again Note that None and 0 are not same but both treated as False in boolean
-            # need to make new root if we are to split root node
-            new_root = InternalNode(self.degree)
-            new_root.keys = [node.keys[mid - 1]]
-            new_root.children = [node, new_node]
-            node.parent = new_node.parent = new_root  # set parent of newly created node
-            self.__root = new_root  # set new ROOT node
-        else:
-            # if node is not root internal node
-            _index = node.parent.children.index(node)
-            node.parent.keys.insert(_index, node.keys[mid - 1])
-            node.parent.children.insert(_index + 1, new_node)
-        node.keys = node.keys[:mid - 1]
-        node.children = node.children[:mid]
-        return node.parent
-
-    def split_leaf_node(self, node):
-        mid = (self.degree + 1) // 2  # integer division in python3
-        new_leaf = LeafNode(self.degree)
-        new_leaf.keys = node.keys[mid:]
-        if node.parent is None:  # None and 0 are to be treated as different value
-            parent_node = InternalNode(self.degree)  # create new parent for node
-            parent_node.keys, parent_node.kids = [node.keys[mid]], [node, new_leaf]
-            node.par = new_leaf.par = parent_node
-            self.__root = parent_node
-        else:
-            i = node.parent.children.index(node)
-            node.parent.keys.insert(i, node.keys[mid])
-            node.parent.children.insert(i + 1, new_leaf)
-            new_leaf.parent = node.parent
-        node.keys = node.keys[:mid]
-        node.sibling = new_leaf
-
     def insert(self, value):
         node = self.__root
-        log("parent:{} leaf:{} node:{}\tkeys:{}".format(node.parent, node.is_leaf, node, node.keys))
-        self.insert_node(node, value)
+        # log("parent:{} leaf:{} node:{}\tkeys:{}\t children:{}".format(node.parent, node.is_leaf, node, node.keys, getattr(node, 'children', '0')))
 
-    def insert_node(self, node, value):
-        if node.is_leaf:  # logic for leaf node
-            _index = bisect_right(node.keys, value)  # bisect and get index value of where to insert value in node.keys
-            node.keys.insert(_index, value)
-            if not node.is_balanced:
-                self.split_leaf_node(node)
+        def split_leaf_node(node):
+            mid = (self.degree + 1) // 2  # integer division in python3
+            new_leaf = LeafNode(self.degree)
+            new_leaf.keys = node.keys[mid:]
+            if node.parent is None:  # None and 0 are to be treated as different value
+                parent_node = InternalNode(self.degree)  # create new parent for node
+                parent_node.keys, parent_node.kids = [node.keys[mid]], [node, new_leaf]
+                node.parent = new_leaf.parent = parent_node
+                self.__root = parent_node
             else:
-                return
-        else:  # logic for internal node
-            if not node.is_balanced:
-                self.insert(self.split_internal_node(node))
+                i = node.parent.children.index(node)
+                node.parent.keys.insert(i, node.keys[mid])
+                node.parent.children.insert(i + 1, new_leaf)
+                new_leaf.parent = node.parent
+            node.keys = node.keys[:mid]
+            node.sibling = new_leaf
+            print(node, node.sibling, self.__root.children, sep=" --- ")
+
+        def split_internal_node(node_):
+            mid = self.degree // 2  # integer division in python3
+            new_node = InternalNode(self.degree)
+            new_node.keys = node_.keys[mid:]
+            new_node.children = node_.children[mid:]
+            new_node.parent = node_.parent
+            for child in new_node.children:
+                child.parent = new_node  # assign parent to every new child of current node
+            if node_.parent is None:  # again Note that None and 0 are not same but both treated as False in boolean
+                # need to make new root if we are to split root node
+                new_root = InternalNode(self.degree)
+                new_root.keys = [node_.keys[mid - 1]]
+                new_root.children = [node_, new_node]
+                node_.parent = new_node.parent = new_root  # set parent of newly created node
+                self.__root = new_root  # set new ROOT node
             else:
-                _index = bisect_right(node.keys, value)
-                self.insert(node.children[_index])
+                # if node is not root internal node
+                _index = node_.parent.children.index(node_)
+                node_.parent.keys.insert(_index, node_.keys[mid - 1])
+                node_.parent.children.insert(_index + 1, new_node)
+            node_.keys = node_.keys[:mid - 1]
+            node_.children = node_.children[:mid]
+            return node_.parent
+
+        def insert_node(node):
+            if node.is_leaf:  # logic for leaf node
+                _index = bisect_right(node.keys, value)  # bisect and get index value of where to insert value in node.keys
+                node.keys.insert(_index, value)
+                if not node.is_balanced:
+                    split_leaf_node(node)
+                else:
+                    return
+            else:  # logic for internal node
+                if not node.is_balanced:
+                    self.insert(split_internal_node(node))
+                else:
+                    _index = bisect_right(node.keys, value)
+                    print(node.keys, node.children, _index)
+                    insert_node(node.children[_index])
+
+        insert_node(node)
 
     def merge(self, node, index):
         if node.children[index].is_leaf:
