@@ -16,24 +16,28 @@ from bisect import bisect_right, bisect_left
 from collections import deque
 
 __author__ = "Gahan Saraiya"
-
+DEBUG = False
 LOG_DIR = "."
 logger = logging.getLogger('bPlusTree')
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s',
                     datefmt='[%Y-%d-%m_%H.%M.%S]',
-                    filename=os.path.join(LOG_DIR, 'b_plus_tree_{}.log'.format(datetime.now().strftime('%Y-%d-%m_%H.%M.%S'))),
+                    filename=os.path.join(LOG_DIR, 'b_plus_tree.log'),
                     filemode='w')
 ch = logging.StreamHandler()  # create console handler with a higher log level
 ch.setLevel(logging.DEBUG)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s')
-# fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(ch)
-log = logger.debug
-log = print
+
+
+def log(*msg):
+    if DEBUG:
+        logger.debug(msg)
+    else:
+        pass
 
 
 class InternalNode(object):
@@ -68,6 +72,7 @@ class InternalNode(object):
         # return False if total keys exceeds max accommodated keys (degree - 1)
         return self.total_keys <= self.max_data
 
+    @property
     def is_empty(self):
         return self.total_keys <= math.floor(self.degree / 2)
 
@@ -99,6 +104,7 @@ class LeafNode(object):
         # return False if total keys exceeds max accommodated data (degree - 1)
         return self.total_keys <= self.degree - 1
 
+    @property
     def is_empty(self):
         return self.total_keys <= math.ceil(self.degree / 2)
 
@@ -208,8 +214,7 @@ class BPlusTree(object):
 
     def pretty_print(self):
         print("B+ Tree: \n")
-        queue = deque()
-        height = 0
+        queue, height = deque(), 0
         queue.append([self.__root, height])
         while True:
             try:
@@ -230,12 +235,13 @@ class BPlusTree(object):
         # log("parent:{} leaf:{} node:{}\tkeys:{}\t children:{}".format(node.parent, node.is_leaf, node, node.keys, getattr(node, 'children', '0')))
 
         def split_leaf_node(node):
+            log("splitting leaf node: {}".format(node.keys))
             mid = (self.degree + 1) // 2  # integer division in python3
             new_leaf = LeafNode(self.degree)
             new_leaf.keys = node.keys[mid:]
             if node.parent is None:  # None and 0 are to be treated as different value
                 parent_node = InternalNode(self.degree)  # create new parent for node
-                parent_node.keys, parent_node.kids = [node.keys[mid]], [node, new_leaf]
+                parent_node.keys, parent_node.children = [node.keys[mid]], [node, new_leaf]
                 node.parent = new_leaf.parent = parent_node
                 self.__root = parent_node
             else:
@@ -245,7 +251,7 @@ class BPlusTree(object):
                 new_leaf.parent = node.parent
             node.keys = node.keys[:mid]
             node.sibling = new_leaf
-            print(node, node.sibling, self.__root.children, sep=" --- ")
+            log("{} --- {} --- {}".format(node, node.sibling, self.__root.children))
 
         def split_internal_node(node_):
             mid = self.degree // 2  # integer division in python3
@@ -271,40 +277,30 @@ class BPlusTree(object):
             node_.children = node_.children[:mid]
             return node_.parent
 
-        def insert_node(node):
-            if node.is_leaf:  # logic for leaf node
-                _index = bisect_right(node.keys, value)  # bisect and get index value of where to insert value in node.keys
-                node.keys.insert(_index, value)
-                if not node.is_balanced:
-                    split_leaf_node(node)
+        def insert_node(_node):
+            log("inserting : {} in node: {} having children: {}".format(value, _node.keys, getattr(_node, "children", "NULL")))
+            if _node.is_leaf:  # logic for leaf node
+                log("node: {} is leaf".format(_node))
+                _index = bisect_right(_node.keys, value)  # bisect and get index value of where to insert value in node.keys
+                _node.keys.insert(_index, value)
+                if not _node.is_balanced:
+                    split_leaf_node(_node)
+                    log("----------- Tree status after split---------------")
+                    log(self.__root)
+                    log(self.__root.children)
+                    log(_node.parent.children)
+                    log(getattr(self.__root, "children", "NULL"))
                 else:
                     return
             else:  # logic for internal node
-                if not node.is_balanced:
-                    self.insert(split_internal_node(node))
+                if not _node.is_balanced:
+                    self.insert(split_internal_node(_node))
                 else:
-                    _index = bisect_right(node.keys, value)
-                    print(node.keys, node.children, _index)
-                    insert_node(node.children[_index])
+                    _index = bisect_right(_node.keys, value)
+                    log(_node.keys, _node.children, _index)
+                    insert_node(_node.children[_index])
 
         insert_node(node)
-
-    def merge(self, node, index):
-        if node.children[index].is_leaf:
-            node.children[index].keys = node.children[index].keys + node.children[index + 1].keys
-            node.children[index].sibling = node.children[index + 1].sibling
-        else:
-            node.children[index].keys = node.children[index].keys + [node.keys[index]] + node.children[index + 1].keys
-            node.children[index].children = node.children[index].children + node.children[index + 1].children
-        node.children.remove(node.children[index + 1])
-        node.keys.remove(node.children[index])
-        if node.keys:
-            return node
-        else:
-            node.children[0].parent = None
-            self.__root = node.children[0]
-            del node
-            return self.__root
 
     @staticmethod
     def traverse_left_to_right(node, index):
@@ -333,36 +329,61 @@ class BPlusTree(object):
             node.children[index + 1].children.remove(node.children[index + 1].children[0])
             node.children[index + 1].keys.remove(node.children[index + 1].keys[0])
 
-    def delete(self, value, node=None):
-        node = self.__root if not node else node
-        if node.is_leaf:
-            _index = bisect_left(node.keys, value)
-            try:
-                node_ = node.keys[_index]
-            except IndexError:
-                return -1
+    def delete(self, delete_value):
+        def merge(node, index):
+            if node.children[index].is_leaf:
+                node.children[index].keys = node.children[index].keys + node.children[index + 1].keys
+                node.children[index].sibling = node.children[index + 1].sibling
             else:
-                if node_ != value:
+                node.children[index].keys = node.children[index].keys + [node.keys[index]] + node.children[
+                    index + 1].keys
+                node.children[index].children = node.children[index].children + node.children[index + 1].children
+            node.children.remove(node.children[index + 1])
+            node.keys.remove(node.children[index])
+            if node.keys:
+                return node
+            else:
+                node.children[0].parent = None
+                self.__root = node.children[0]
+                del node
+                return self.__root
+
+        def delete_node(value, node):
+            log("deleting {} from node: {}".format(value, node))
+            if node.is_leaf:
+                log("node is leaf")
+                _index = bisect_left(node.keys, value)
+                try:
+                    node_ = node.keys[_index]
+                except IndexError:
                     return -1
                 else:
-                    node.keys.remove(value)
-                    return 0
-        else:
-            _index = bisect_right(node.keys, value)
-            if _index == len(node.keys):
-                if not node.children[_index].is_empty:
-                    return self.delete(node.children[_index], value)
-                elif not node.children[_index - 1].is_empty:
-                    self.traverse_left_to_right(node, _index - 1)
-                    return self.delete(node.children[_index], value)
-                else:
-                    return self.delete(self.merge(node, _index), value)
+                    if node_ != value:
+                        return -1
+                    else:
+                        node.keys.remove(value)
+                        return 0
+            else:
+                log("traversing internal node for deleting value")
+                _index = bisect_right(node.keys, value)
+                log("encountered index: {} having child values: {}".format(_index, node.children[_index]))
+                if _index < len(node.keys):
+                    if not node.children[_index].is_empty:
+                        return delete_node(value, node.children[_index])
+                    elif not node.children[_index - 1].is_empty:
+                        self.traverse_left_to_right(node, _index - 1)
+                        return delete_node(value, node.children[_index])
+                    else:
+                        return delete_node(value, merge(node, _index))
+        delete_node(delete_value, self.__root)
 
 
 if __name__ == "__main__":
-    # test_lis = [0, 1, 11, 1, 2]
-    # test_lis = [i for i in range(1, 4 + 1)]
+    test_lis = [0, 1, 11, 1, 2, 22, 13, 14, 4, 11]
+    # test_lis = range(10)
     b = BPlusTree(degree=4)
-    for val in range(1, 6):
+    for val in test_lis:
         b.insert(val)
-    # b.pretty_print()
+    b.pretty_print()
+    b.delete(11)
+    b.pretty_print()
