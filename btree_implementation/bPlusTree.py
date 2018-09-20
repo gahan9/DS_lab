@@ -386,4 +386,5 @@ if __name__ == "__main__":
         b.insert(val)
     b.pretty_print()
     b.delete(11)
+    b.delete(11)
     b.pretty_print()
