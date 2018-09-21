@@ -430,11 +430,13 @@ if __name__ == "__main__":
         if choice == 1:
             val = int(input("Enter number to insert: "))
             b.insert(val)
+            print("----------- B+ TREE AFTER INSERT : {:3d} -----------".format(val))
             b.pretty_print()
         elif choice == 2:
             _values = map(int, input("Enter numbers (space separated): ").split())
             for val in _values:
                 b.insert(val)
+                print("----------- B+ TREE AFTER INSERT : {:3d} -----------".format(val))
                 b.pretty_print()
         elif choice == 3:
             val = int(input("Enter number to delete: "))
@@ -443,8 +445,8 @@ if __name__ == "__main__":
             b.pretty_print()
         elif choice == 4:
             val = int(input("Enter number to search: "))
-            b.search(val, val)
-            b.pretty_print()
+            result = b.search(val, val)
+            print("Result*: {} \n (*distinct values)".format(b.search(result)))
         elif choice == 5:
             search_start = int(input("Enter start number of range: "))
             search_end = int(input("Enter end number of range: "))
