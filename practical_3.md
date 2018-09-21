@@ -1,492 +1,553 @@
-﻿[Practical 3](https://github.com/gahan9/DS_lab/blob/master/practical_3.md)
-===
-> Implementation of B+ Tree Indexing for Database query processing  
-Input-output for Select Query on exact Match, Range Query, Insert , delete Query.  
-Analysis report
+---
 
-Implementation
-------
-```python
-#!usr/bin/python3
-# coding=utf-8
-"""
+
+---
+
+<h1 id="practical-3"><a href="https://github.com/gahan9/DS_lab/blob/master/practical_3.md">Practical 3</a></h1>
+<blockquote>
+<p>Implementation of B+ Tree Indexing for Database query processing<br>
+Input-output for Select Query on exact Match, Range Query, Insert , delete Query.<br>
+Analysis report</p>
+</blockquote>
+<h2 id="implementation">Implementation</h2>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#!usr/bin/python3</span>
+<span class="token comment"># coding=utf-8</span>
+<span class="token triple-quoted-string string">"""
 some terminology of python:
-_var => (convention only) underscore prefix is just a hint to programmer that a variable or method starting with a single underscore is intended for internal use
-var_ => (convention only) to brake name conflict
-__var => “dunders” (name mangling) rewrite the attribute name in order to avoid naming conflicts in subclasses.
+_var =&gt; (convention only) underscore prefix is just a hint to programmer that a variable or method starting with a single underscore is intended for internal use
+var_ =&gt; (convention only) to brake name conflict
+__var =&gt; “dunders” (name mangling) rewrite the attribute name in order to avoid naming conflicts in subclasses.
             interpreter changes the name of the variable in a way that makes it harder to create collisions when the class is extended later.
-"""
+"""</span>
 
-import math
-import logging
-import os
-import random
-from datetime import datetime
-from bisect import bisect_right, bisect_left
-from collections import deque
+<span class="token keyword">import</span> math
+<span class="token keyword">import</span> logging
+<span class="token keyword">import</span> os
+<span class="token keyword">import</span> random
+<span class="token keyword">from</span> datetime <span class="token keyword">import</span> datetime
+<span class="token keyword">from</span> bisect <span class="token keyword">import</span> bisect_right<span class="token punctuation">,</span> bisect_left
+<span class="token keyword">from</span> collections <span class="token keyword">import</span> deque
 
-__author__ = "Gahan Saraiya"
-DEBUG = False
-LOG_DIR = "."
-logger = logging.getLogger('bPlusTree')
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s',
-                    datefmt='[%Y-%d-%m_%H.%M.%S]',
-                    filename=os.path.join(LOG_DIR, 'b_plus_tree.log'),
-                    filemode='w')
-ch = logging.StreamHandler()  # create console handler with a higher log level
-ch.setLevel(logging.DEBUG)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s')
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(ch)
-
-
-def log(*msg):
-    if DEBUG:
-        logger.debug(msg)
-    else:
-        pass
+__author__ <span class="token operator">=</span> <span class="token string">"Gahan Saraiya"</span>
+DEBUG <span class="token operator">=</span> <span class="token boolean">False</span>
+LOG_DIR <span class="token operator">=</span> <span class="token string">"."</span>
+logger <span class="token operator">=</span> logging<span class="token punctuation">.</span>getLogger<span class="token punctuation">(</span><span class="token string">'bPlusTree'</span><span class="token punctuation">)</span>
+logging<span class="token punctuation">.</span>basicConfig<span class="token punctuation">(</span>level<span class="token operator">=</span>logging<span class="token punctuation">.</span>DEBUG<span class="token punctuation">,</span>
+                    <span class="token builtin">format</span><span class="token operator">=</span><span class="token string">'%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s'</span><span class="token punctuation">,</span>
+                    datefmt<span class="token operator">=</span><span class="token string">'[%Y-%d-%m_%H.%M.%S]'</span><span class="token punctuation">,</span>
+                    filename<span class="token operator">=</span>os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>join<span class="token punctuation">(</span>LOG_DIR<span class="token punctuation">,</span> <span class="token string">'b_plus_tree.log'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    filemode<span class="token operator">=</span><span class="token string">'w'</span><span class="token punctuation">)</span>
+ch <span class="token operator">=</span> logging<span class="token punctuation">.</span>StreamHandler<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token comment"># create console handler with a higher log level</span>
+ch<span class="token punctuation">.</span>setLevel<span class="token punctuation">(</span>logging<span class="token punctuation">.</span>DEBUG<span class="token punctuation">)</span>
+<span class="token comment"># create formatter and add it to the handlers</span>
+formatter <span class="token operator">=</span> logging<span class="token punctuation">.</span>Formatter<span class="token punctuation">(</span><span class="token string">'%(asctime)s [%(name)-8s - %(levelname)s]: %(message)s'</span><span class="token punctuation">)</span>
+ch<span class="token punctuation">.</span>setFormatter<span class="token punctuation">(</span>formatter<span class="token punctuation">)</span>
+<span class="token comment"># add the handlers to the logger</span>
+logger<span class="token punctuation">.</span>addHandler<span class="token punctuation">(</span>ch<span class="token punctuation">)</span>
 
 
-class InternalNode(object):
-    """
+<span class="token keyword">def</span> <span class="token function">log</span><span class="token punctuation">(</span><span class="token operator">*</span>msg<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">if</span> DEBUG<span class="token punctuation">:</span>
+        logger<span class="token punctuation">.</span>debug<span class="token punctuation">(</span>msg<span class="token punctuation">)</span>
+    <span class="token keyword">else</span><span class="token punctuation">:</span>
+        <span class="token keyword">pass</span>
+
+
+<span class="token keyword">class</span> <span class="token class-name">InternalNode</span><span class="token punctuation">(</span><span class="token builtin">object</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""
     Class : B+ Tree Internal Node
     represents internal (non-leaf) node in B+ tree
-    """
-    def __init__(self, degree=4):
-        """
+    """</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> degree<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
         initialize B tree node
         :param degree: specify degree of btree  # default degree set to 4
-        """
-        self.degree = degree
-        self.keys = []  # store keys/data values
-        self.children = []  # store child nodes (list of instances of BtreeNode); empty list if node is leaf node
-        self.parent = None
+        """</span>
+        self<span class="token punctuation">.</span>degree <span class="token operator">=</span> degree
+        self<span class="token punctuation">.</span>keys <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>  <span class="token comment"># store keys/data values</span>
+        self<span class="token punctuation">.</span>children <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>  <span class="token comment"># store child nodes (list of instances of BtreeNode); empty list if node is leaf node</span>
+        self<span class="token punctuation">.</span>parent <span class="token operator">=</span> <span class="token boolean">None</span>
 
-    def __repr__(self):
-        return " | ".join(map(str, self.keys))
+    <span class="token keyword">def</span> <span class="token function">__repr__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token string">" | "</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token builtin">map</span><span class="token punctuation">(</span><span class="token builtin">str</span><span class="token punctuation">,</span> self<span class="token punctuation">.</span>keys<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
-    @property
-    def is_leaf(self):
-        return False
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_leaf</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token boolean">False</span>
 
-    @property
-    def total_keys(self):
-        return len(self.keys)
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">total_keys</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token builtin">len</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>keys<span class="token punctuation">)</span>
 
-    @property
-    def is_balanced(self):
-        # return False if total keys exceeds max accommodated keys (degree - 1)
-        return self.total_keys <= self.degree - 1
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_balanced</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># return False if total keys exceeds max accommodated keys (degree - 1)</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>total_keys <span class="token operator">&lt;=</span> self<span class="token punctuation">.</span>degree <span class="token operator">-</span> <span class="token number">1</span>
 
-    @property
-    def is_full(self):
-        return self.total_keys >= self.degree
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_full</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>total_keys <span class="token operator">&gt;=</span> self<span class="token punctuation">.</span>degree
 
-    @property
-    def is_empty(self):
-        return self.total_keys < (self.degree + 1) // 2
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_empty</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>total_keys <span class="token operator">&lt;</span> <span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">//</span> <span class="token number">2</span>
 
 
-class LeafNode(object):
-    """
+<span class="token keyword">class</span> <span class="token class-name">LeafNode</span><span class="token punctuation">(</span><span class="token builtin">object</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""
     Class : B+ Tree Leaf Node
     represents leaf node in B+ tree
-    """
-    def __init__(self, degree=4):
-        self.degree = degree
-        self.keys = []  # data values
-        self.sibling = None  # sibling node to point
-        self.parent = None  # parent node - None for root node
+    """</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> degree<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>degree <span class="token operator">=</span> degree
+        self<span class="token punctuation">.</span>keys <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>  <span class="token comment"># data values</span>
+        self<span class="token punctuation">.</span>sibling <span class="token operator">=</span> <span class="token boolean">None</span>  <span class="token comment"># sibling node to point</span>
+        self<span class="token punctuation">.</span>parent <span class="token operator">=</span> <span class="token boolean">None</span>  <span class="token comment"># parent node - None for root node</span>
 
-    def __repr__(self):
-        return " | ".join(map(str, self.keys))
+    <span class="token keyword">def</span> <span class="token function">__repr__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token string">" | "</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token builtin">map</span><span class="token punctuation">(</span><span class="token builtin">str</span><span class="token punctuation">,</span> self<span class="token punctuation">.</span>keys<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
-    @property
-    def is_leaf(self):
-        return True
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_leaf</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token boolean">True</span>
 
-    @property
-    def total_keys(self):
-        return len(self.keys)
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">total_keys</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token builtin">len</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>keys<span class="token punctuation">)</span>
 
-    @property
-    def is_balanced(self):
-        # return False if total keys exceeds max accommodated data (degree - 1)
-        return self.total_keys < self.degree
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_balanced</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># return False if total keys exceeds max accommodated data (degree - 1)</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>total_keys <span class="token operator">&lt;</span> self<span class="token punctuation">.</span>degree
 
-    @property
-    def is_full(self):
-        return not self.is_balanced
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_full</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token operator">not</span> self<span class="token punctuation">.</span>is_balanced
 
-    @property
-    def is_empty(self):
-        return self.total_keys < math.floor(self.degree / 2)
+    @<span class="token builtin">property</span>
+    <span class="token keyword">def</span> <span class="token function">is_empty</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> self<span class="token punctuation">.</span>total_keys <span class="token operator">&lt;</span> math<span class="token punctuation">.</span>floor<span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">)</span>
 
 
-class BPlusTree(object):
-    def __init__(self, degree=4):
-        self.degree = degree
-        self.__root = LeafNode(degree=degree)
-        self.__leaf = self.__root
+<span class="token keyword">class</span> <span class="token class-name">BPlusTree</span><span class="token punctuation">(</span><span class="token builtin">object</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> degree<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>degree <span class="token operator">=</span> degree
+        self<span class="token punctuation">.</span>__root <span class="token operator">=</span> LeafNode<span class="token punctuation">(</span>degree<span class="token operator">=</span>degree<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>__leaf <span class="token operator">=</span> self<span class="token punctuation">.</span>__root
 
-    def search_key(self, start_node, value):
-        """
+    <span class="token keyword">def</span> <span class="token function">search_key</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> start_node<span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
 
         :param start_node: get root or any non leaf node
         :param value: value to be search
         :return: most matching leaf node
-        """
-        if start_node.is_leaf:
-            _index = bisect_left(start_node.keys, value)
-            return _index, start_node
-        else:
-            _index = bisect_right(start_node.keys, value)
-            return self.search_key(start_node.children[_index], value)
+        """</span>
+        <span class="token keyword">if</span> start_node<span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+            _index <span class="token operator">=</span> bisect_left<span class="token punctuation">(</span>start_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+            <span class="token keyword">return</span> _index<span class="token punctuation">,</span> start_node
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            _index <span class="token operator">=</span> bisect_right<span class="token punctuation">(</span>start_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+            <span class="token keyword">return</span> self<span class="token punctuation">.</span>search_key<span class="token punctuation">(</span>start_node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">,</span> value<span class="token punctuation">)</span>
 
-    def search(self, start=None, end=None):
-        """
+    <span class="token keyword">def</span> <span class="token function">search</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> start<span class="token operator">=</span><span class="token boolean">None</span><span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token boolean">None</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
 
         :param start: specify start node to search range for
         :param end: specify end node for range search
         :return:
-        """
-        _result = []
-        node = self.__root
-        leaf = self.__leaf
+        """</span>
+        _result <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        node <span class="token operator">=</span> self<span class="token punctuation">.</span>__root
+        leaf <span class="token operator">=</span> self<span class="token punctuation">.</span>__leaf
 
-        if start is None:
-            while True:
-                for value in leaf.keys:
-                    if value <= end:
-                        _result.append(value)
-                    else:
-                        return _result
-                if leaf.sibling is None:
-                    return _result
-                else:
-                    leaf = leaf.sibling
-        elif end is None:
-            _index, leaf = self.search_key(node, start)
-            _result.extend(leaf.keys[_index:])  # equivalent to _result + leaf
-            while True:
-                if leaf.sibling is None:
-                    return _result
-                else:
-                    leaf = leaf.sibling
-                    _result.extend(leaf.keys)
-        else:
-            if start == end:
-                _index, _node = self.search_key(node, start)
-                try:
-                    if _node.keys[_index] == start:
-                        _result.append(_node.keys[_index])
-                        return _result
-                    else:
-                        return _result
-                except IndexError:
-                    return _result
-            else:
-                _index1, _node1 = self.search_key(node, start)
-                _index2, _node2 = self.search_key(node, end)
-                if _node1 is _node2:
-                    if _index1 == _index2:
-                        return _result
-                    else:
-                        _result.extend(_node1.keys[_index1:_index2])
-                        return _result
-                else:
-                    _result.extend(_node1.keys[_index1:])
-                    node_ = _node1
-                    while True:
-                        if _node1.sibling == _node2:
-                            _result.extend(_node2.keys[:_index2 + 1])
-                            return _result
-                        else:
-                            try:
-                                _result.extend(node_.sibling.keys)
-                                node_ = node_.sibling
-                            except AttributeError:
-                                return _result
+        <span class="token keyword">if</span> start <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+            <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+                <span class="token keyword">for</span> value <span class="token keyword">in</span> leaf<span class="token punctuation">.</span>keys<span class="token punctuation">:</span>
+                    <span class="token keyword">if</span> value <span class="token operator">&lt;=</span> end<span class="token punctuation">:</span>
+                        _result<span class="token punctuation">.</span>append<span class="token punctuation">(</span>value<span class="token punctuation">)</span>
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> _result
+                <span class="token keyword">if</span> leaf<span class="token punctuation">.</span>sibling <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+                    <span class="token keyword">return</span> _result
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    leaf <span class="token operator">=</span> leaf<span class="token punctuation">.</span>sibling
+        <span class="token keyword">elif</span> end <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+            _index<span class="token punctuation">,</span> leaf <span class="token operator">=</span> self<span class="token punctuation">.</span>search_key<span class="token punctuation">(</span>node<span class="token punctuation">,</span> start<span class="token punctuation">)</span>
+            _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>leaf<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index<span class="token punctuation">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span>  <span class="token comment"># equivalent to _result + leaf</span>
+            <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+                <span class="token keyword">if</span> leaf<span class="token punctuation">.</span>sibling <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+                    <span class="token keyword">return</span> _result
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    leaf <span class="token operator">=</span> leaf<span class="token punctuation">.</span>sibling
+                    _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>leaf<span class="token punctuation">.</span>keys<span class="token punctuation">)</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token keyword">if</span> start <span class="token operator">==</span> end<span class="token punctuation">:</span>
+                _index<span class="token punctuation">,</span> _node <span class="token operator">=</span> self<span class="token punctuation">.</span>search_key<span class="token punctuation">(</span>node<span class="token punctuation">,</span> start<span class="token punctuation">)</span>
+                <span class="token keyword">try</span><span class="token punctuation">:</span>
+                    <span class="token keyword">if</span> _node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index<span class="token punctuation">]</span> <span class="token operator">==</span> start<span class="token punctuation">:</span>
+                        _result<span class="token punctuation">.</span>append<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                        <span class="token keyword">return</span> _result
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> _result
+                <span class="token keyword">except</span> IndexError<span class="token punctuation">:</span>
+                    <span class="token keyword">return</span> _result
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                _index1<span class="token punctuation">,</span> _node1 <span class="token operator">=</span> self<span class="token punctuation">.</span>search_key<span class="token punctuation">(</span>node<span class="token punctuation">,</span> start<span class="token punctuation">)</span>
+                _index2<span class="token punctuation">,</span> _node2 <span class="token operator">=</span> self<span class="token punctuation">.</span>search_key<span class="token punctuation">(</span>node<span class="token punctuation">,</span> end<span class="token punctuation">)</span>
+                <span class="token keyword">if</span> _node1 <span class="token keyword">is</span> _node2<span class="token punctuation">:</span>
+                    <span class="token keyword">if</span> _index1 <span class="token operator">==</span> _index2<span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> _result
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>_node1<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index1<span class="token punctuation">:</span>_index2<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                        <span class="token keyword">return</span> _result
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>_node1<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index1<span class="token punctuation">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+                    node_ <span class="token operator">=</span> _node1
+                    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+                        <span class="token keyword">if</span> _node1<span class="token punctuation">.</span>sibling <span class="token operator">==</span> _node2<span class="token punctuation">:</span>
+                            _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>_node2<span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token punctuation">:</span>_index2 <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+                            <span class="token keyword">return</span> _result
+                        <span class="token keyword">else</span><span class="token punctuation">:</span>
+                            <span class="token keyword">try</span><span class="token punctuation">:</span>
+                                _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>node_<span class="token punctuation">.</span>sibling<span class="token punctuation">.</span>keys<span class="token punctuation">)</span>
+                                node_ <span class="token operator">=</span> node_<span class="token punctuation">.</span>sibling
+                            <span class="token keyword">except</span> AttributeError<span class="token punctuation">:</span>
+                                <span class="token keyword">return</span> _result
 
-    def traverse(self, _node):
-        _result = []
-        _result.extend(_node.keys)
-        if getattr(_node, "sibling", None) is None:
-            return _result
-        for i in range(0, len(_node.sibling))[::-1]:
-            _result.extend(self.traverse(_node.sibling[i]))
-        while True:
-            pass
+    <span class="token keyword">def</span> <span class="token function">traverse</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> _node<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        _result <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>keys<span class="token punctuation">)</span>
+        <span class="token keyword">if</span> <span class="token builtin">getattr</span><span class="token punctuation">(</span>_node<span class="token punctuation">,</span> <span class="token string">"sibling"</span><span class="token punctuation">,</span> <span class="token boolean">None</span><span class="token punctuation">)</span> <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>
+            <span class="token keyword">return</span> _result
+        <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token builtin">len</span><span class="token punctuation">(</span>_node<span class="token punctuation">.</span>sibling<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+            _result<span class="token punctuation">.</span>extend<span class="token punctuation">(</span>self<span class="token punctuation">.</span>traverse<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>sibling<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+            <span class="token keyword">pass</span>
 
-    def pretty_print(self):
-        # print("B+ Tree:")
-        queue, height = deque(), 0
-        queue.append([self.__root, height])
-        while True:
-            try:
-                node, height_ = queue.popleft()
-                # print("adding node: {}".format(node))
-            except IndexError:
-                return
-            else:
-                if not node.is_leaf:
-                    print("Internal Node : {:} \theight >> {}".format(node.keys, height_))
-                    if height_ == height:
-                        height += 1
-                    queue.extend([[i, height] for i in node.children])
-                else:
-                    print("Leaf Node     : {} \theight >> {}".format([i for i in node.keys], height_))
+    <span class="token keyword">def</span> <span class="token function">pretty_print</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># print("B+ Tree:")</span>
+        queue<span class="token punctuation">,</span> height <span class="token operator">=</span> deque<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span>
+        queue<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token punctuation">[</span>self<span class="token punctuation">.</span>__root<span class="token punctuation">,</span> height<span class="token punctuation">]</span><span class="token punctuation">)</span>
+        <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+            <span class="token keyword">try</span><span class="token punctuation">:</span>
+                node<span class="token punctuation">,</span> height_ <span class="token operator">=</span> queue<span class="token punctuation">.</span>popleft<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token comment"># print("adding node: {}".format(node))</span>
+            <span class="token keyword">except</span> IndexError<span class="token punctuation">:</span>
+                <span class="token keyword">return</span>
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                <span class="token keyword">if</span> <span class="token operator">not</span> node<span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Internal Node : {:} \theight &gt;&gt; {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> height_<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token keyword">if</span> height_ <span class="token operator">==</span> height<span class="token punctuation">:</span>
+                        height <span class="token operator">+=</span> <span class="token number">1</span>
+                    queue<span class="token punctuation">.</span>extend<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span>i<span class="token punctuation">,</span> height<span class="token punctuation">]</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> node<span class="token punctuation">.</span>children<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Leaf Node     : {} \theight &gt;&gt; {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token punctuation">[</span>i <span class="token keyword">for</span> i <span class="token keyword">in</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">]</span><span class="token punctuation">,</span> height_<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
-    def insert(self, value):
-        # log("parent:{} leaf:{} node:{}\tkeys:{}\t children:{}".format(node.parent, node.is_leaf, node, node.keys, getattr(node, 'children', '0')))
+    <span class="token keyword">def</span> <span class="token function">insert</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token comment"># log("parent:{} leaf:{} node:{}\tkeys:{}\t children:{}".format(node.parent, node.is_leaf, node, node.keys, getattr(node, 'children', '0')))</span>
 
-        def split_leaf_node(node):
-            log("splitting leaf node: {}".format(node.keys))
-            mid = self.degree // 2  # integer division in python3
-            new_leaf = LeafNode(self.degree)
-            new_leaf.keys = node.keys[mid:]
-            if node.parent is None:  # None and 0 are to be treated as different value
-                parent_node = InternalNode(self.degree)  # create new parent for node
-                parent_node.keys, parent_node.children = [node.keys[mid]], [node, new_leaf]
-                node.parent = new_leaf.parent = parent_node
-                self.__root = parent_node
-            else:
-                _index = node.parent.children.index(node)
-                node.parent.keys.insert(_index, node.keys[mid])
-                node.parent.children.insert(_index + 1, new_leaf)
-                new_leaf.parent = node.parent
-                if not node.parent.is_balanced:
-                    split_internal_node(node.parent)
-            node.keys = node.keys[:mid]
-            node.sibling = new_leaf
-            log("{} --- {} --- {}".format(node, node.sibling, self.__root.children))
+        <span class="token keyword">def</span> <span class="token function">split_leaf_node</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            log<span class="token punctuation">(</span><span class="token string">"splitting leaf node: {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            mid <span class="token operator">=</span> self<span class="token punctuation">.</span>degree <span class="token operator">//</span> <span class="token number">2</span>  <span class="token comment"># integer division in python3</span>
+            new_leaf <span class="token operator">=</span> LeafNode<span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree<span class="token punctuation">)</span>
+            new_leaf<span class="token punctuation">.</span>keys <span class="token operator">=</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid<span class="token punctuation">:</span><span class="token punctuation">]</span>
+            <span class="token keyword">if</span> node<span class="token punctuation">.</span>parent <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>  <span class="token comment"># None and 0 are to be treated as different value</span>
+                parent_node <span class="token operator">=</span> InternalNode<span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree<span class="token punctuation">)</span>  <span class="token comment"># create new parent for node</span>
+                parent_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> parent_node<span class="token punctuation">.</span>children <span class="token operator">=</span> <span class="token punctuation">[</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid<span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>node<span class="token punctuation">,</span> new_leaf<span class="token punctuation">]</span>
+                node<span class="token punctuation">.</span>parent <span class="token operator">=</span> new_leaf<span class="token punctuation">.</span>parent <span class="token operator">=</span> parent_node
+                self<span class="token punctuation">.</span>__root <span class="token operator">=</span> parent_node
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                _index <span class="token operator">=</span> node<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>children<span class="token punctuation">.</span>index<span class="token punctuation">(</span>node<span class="token punctuation">)</span>
+                node<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>_index<span class="token punctuation">,</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                node<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>children<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>_index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">,</span> new_leaf<span class="token punctuation">)</span>
+                new_leaf<span class="token punctuation">.</span>parent <span class="token operator">=</span> node<span class="token punctuation">.</span>parent
+                <span class="token keyword">if</span> <span class="token operator">not</span> node<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>is_balanced<span class="token punctuation">:</span>
+                    split_internal_node<span class="token punctuation">(</span>node<span class="token punctuation">.</span>parent<span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>keys <span class="token operator">=</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token punctuation">:</span>mid<span class="token punctuation">]</span>
+            node<span class="token punctuation">.</span>sibling <span class="token operator">=</span> new_leaf
+            log<span class="token punctuation">(</span><span class="token string">"{} --- {} --- {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>node<span class="token punctuation">,</span> node<span class="token punctuation">.</span>sibling<span class="token punctuation">,</span> self<span class="token punctuation">.</span>__root<span class="token punctuation">.</span>children<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
-        def split_internal_node(node_):
-            mid = self.degree // 2  # integer division in python3
-            new_node = InternalNode(self.degree)
-            new_node.keys = node_.keys[mid:]
-            new_node.children = node_.children[mid:]
-            new_node.parent = node_.parent
-            for child in new_node.children:
-                child.parent = new_node  # assign parent to every new child of current node
-            if node_.parent is None:  # again Note that None and 0 are not same but both treated as False in boolean
-                # need to make new root if we are to split root node
-                new_root = InternalNode(self.degree)
-                new_root.keys = [node_.keys[mid - 1]]
-                new_root.children = [node_, new_node]
-                node_.parent = new_node.parent = new_root  # set parent of newly created node
-                self.__root = new_root  # set new ROOT node
-            else:
-                # if node is not root internal node
-                _index = node_.parent.children.index(node_)
-                node_.parent.keys.insert(_index, node_.keys[mid - 1])
-                node_.parent.children.insert(_index + 1, new_node)
-                if not node_.parent.is_balanced:
-                    split_internal_node(node_.parent)
-            node_.keys = node_.keys[:mid - 1]
-            node_.children = node_.children[:mid]
-            return node_.parent
+        <span class="token keyword">def</span> <span class="token function">split_internal_node</span><span class="token punctuation">(</span>node_<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            mid <span class="token operator">=</span> self<span class="token punctuation">.</span>degree <span class="token operator">//</span> <span class="token number">2</span>  <span class="token comment"># integer division in python3</span>
+            new_node <span class="token operator">=</span> InternalNode<span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree<span class="token punctuation">)</span>
+            new_node<span class="token punctuation">.</span>keys <span class="token operator">=</span> node_<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid<span class="token punctuation">:</span><span class="token punctuation">]</span>
+            new_node<span class="token punctuation">.</span>children <span class="token operator">=</span> node_<span class="token punctuation">.</span>children<span class="token punctuation">[</span>mid<span class="token punctuation">:</span><span class="token punctuation">]</span>
+            new_node<span class="token punctuation">.</span>parent <span class="token operator">=</span> node_<span class="token punctuation">.</span>parent
+            <span class="token keyword">for</span> child <span class="token keyword">in</span> new_node<span class="token punctuation">.</span>children<span class="token punctuation">:</span>
+                child<span class="token punctuation">.</span>parent <span class="token operator">=</span> new_node  <span class="token comment"># assign parent to every new child of current node</span>
+            <span class="token keyword">if</span> node_<span class="token punctuation">.</span>parent <span class="token keyword">is</span> <span class="token boolean">None</span><span class="token punctuation">:</span>  <span class="token comment"># again Note that None and 0 are not same but both treated as False in boolean</span>
+                <span class="token comment"># need to make new root if we are to split root node</span>
+                new_root <span class="token operator">=</span> InternalNode<span class="token punctuation">(</span>self<span class="token punctuation">.</span>degree<span class="token punctuation">)</span>
+                new_root<span class="token punctuation">.</span>keys <span class="token operator">=</span> <span class="token punctuation">[</span>node_<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+                new_root<span class="token punctuation">.</span>children <span class="token operator">=</span> <span class="token punctuation">[</span>node_<span class="token punctuation">,</span> new_node<span class="token punctuation">]</span>
+                node_<span class="token punctuation">.</span>parent <span class="token operator">=</span> new_node<span class="token punctuation">.</span>parent <span class="token operator">=</span> new_root  <span class="token comment"># set parent of newly created node</span>
+                self<span class="token punctuation">.</span>__root <span class="token operator">=</span> new_root  <span class="token comment"># set new ROOT node</span>
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                <span class="token comment"># if node is not root internal node</span>
+                _index <span class="token operator">=</span> node_<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>children<span class="token punctuation">.</span>index<span class="token punctuation">(</span>node_<span class="token punctuation">)</span>
+                node_<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>_index<span class="token punctuation">,</span> node_<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>mid <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+                node_<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>children<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>_index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">,</span> new_node<span class="token punctuation">)</span>
+                <span class="token keyword">if</span> <span class="token operator">not</span> node_<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>is_balanced<span class="token punctuation">:</span>
+                    split_internal_node<span class="token punctuation">(</span>node_<span class="token punctuation">.</span>parent<span class="token punctuation">)</span>
+            node_<span class="token punctuation">.</span>keys <span class="token operator">=</span> node_<span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token punctuation">:</span>mid <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span>
+            node_<span class="token punctuation">.</span>children <span class="token operator">=</span> node_<span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token punctuation">:</span>mid<span class="token punctuation">]</span>
+            <span class="token keyword">return</span> node_<span class="token punctuation">.</span>parent
 
-        def insert_node(_node):
-            log("inserting : {} in node: {} having children: {}".format(value, _node.keys, getattr(_node, "children", "NULL")))
-            if _node.is_leaf:  # logic for leaf node
-                log("node: {} is leaf".format(_node))
-                _index = bisect_right(_node.keys, value)  # bisect and get index value of where to insert value in node.keys
-                _node.keys.insert(_index, value)
-                if not _node.is_balanced:
-                    split_leaf_node(_node)
-                    log("----------- Tree status after split---------------")
-                    log(self.__root)
-                    log(self.__root.children)
-                    log(_node.parent.children)
-                    log(getattr(self.__root, "children", "NULL"))
-                else:
-                    return
-            else:  # logic for internal node
-                if not _node.is_balanced:
-                    self.insert(split_internal_node(_node))
-                else:
-                    _index = bisect_right(_node.keys, value)
-                    log(_node.keys, _node.children, _index)
-                    insert_node(_node.children[_index])
+        <span class="token keyword">def</span> <span class="token function">insert_node</span><span class="token punctuation">(</span>_node<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            log<span class="token punctuation">(</span><span class="token string">"inserting : {} in node: {} having children: {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>value<span class="token punctuation">,</span> _node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> <span class="token builtin">getattr</span><span class="token punctuation">(</span>_node<span class="token punctuation">,</span> <span class="token string">"children"</span><span class="token punctuation">,</span> <span class="token string">"NULL"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> _node<span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>  <span class="token comment"># logic for leaf node</span>
+                log<span class="token punctuation">(</span><span class="token string">"node: {} is leaf"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>_node<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                _index <span class="token operator">=</span> bisect_right<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>  <span class="token comment"># bisect and get index value of where to insert value in node.keys</span>
+                _node<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>_index<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+                <span class="token keyword">if</span> <span class="token operator">not</span> _node<span class="token punctuation">.</span>is_balanced<span class="token punctuation">:</span>
+                    split_leaf_node<span class="token punctuation">(</span>_node<span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span><span class="token string">"----------- Tree status after split---------------"</span><span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span>self<span class="token punctuation">.</span>__root<span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span>self<span class="token punctuation">.</span>__root<span class="token punctuation">.</span>children<span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>children<span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span><span class="token builtin">getattr</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>__root<span class="token punctuation">,</span> <span class="token string">"children"</span><span class="token punctuation">,</span> <span class="token string">"NULL"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    <span class="token keyword">return</span>
+            <span class="token keyword">else</span><span class="token punctuation">:</span>  <span class="token comment"># logic for internal node</span>
+                <span class="token keyword">if</span> <span class="token operator">not</span> _node<span class="token punctuation">.</span>is_balanced<span class="token punctuation">:</span>
+                    self<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>split_internal_node<span class="token punctuation">(</span>_node<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    _index <span class="token operator">=</span> bisect_right<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+                    log<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> _node<span class="token punctuation">.</span>children<span class="token punctuation">,</span> _index<span class="token punctuation">)</span>
+                    insert_node<span class="token punctuation">(</span>_node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">)</span>
 
-        insert_node(self.__root)
+        insert_node<span class="token punctuation">(</span>self<span class="token punctuation">.</span>__root<span class="token punctuation">)</span>
 
-    @staticmethod
-    def traverse_left_to_right(node, index):
-        if node.children[index].is_leaf:
-            node.children[index + 1].keys.insert(0, node.children[index].keys[-1])
-            node.children[index].keys.pop()
-            node.keys[index] = node.children[index + 1].keys[0]
-        else:
-            node.children[index + 1].children.insert(0, node.children[index].children[-1])
-            node.children[index].children[-1].parent = node.children[index + 1]
-            node.children[index + 1].keys.insert(0, node.keys[index])
-            node.children[index].children.pop()
-            node.children[index].keys.pop()
+    @<span class="token builtin">staticmethod</span>
+    <span class="token keyword">def</span> <span class="token function">traverse_left_to_right</span><span class="token punctuation">(</span>node<span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">if</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>insert<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>pop<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">.</span>insert<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>parent <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>insert<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">.</span>pop<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>pop<span class="token punctuation">(</span><span class="token punctuation">)</span>
 
-    @staticmethod
-    def traverse_right_to_left(node, index):
-        if node.children[index].is_leaf:
-            node.children[index].keys.append(node.children[index + 1].keys[0])
-            node.children[index + 1].keys.remove(node.children[index + 1].keys[0])
-            node.keys[index] = node.children[index + 1].keys[0]
-        else:
-            node.children[index].children.append(node.children[index + 1].children[0])
-            node.children[index + 1].children[0].parent = node.children[index]
-            node.children[index].keys.append(node.keys[index])
-            node.keys[index] = node.children[index + 1].children[0]
-            node.children[index + 1].children.remove(node.children[index + 1].children[0])
-            node.children[index + 1].keys.remove(node.children[index + 1].keys[0])
+    @<span class="token builtin">staticmethod</span>
+    <span class="token keyword">def</span> <span class="token function">traverse_right_to_left</span><span class="token punctuation">(</span>node<span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">if</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>append<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">.</span>append<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>parent <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>append<span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
 
-    def delete(self, delete_value):
-        def merge(node, index):
-            if node.children[index].is_leaf:
-                node.children[index].keys = node.children[index].keys + node.children[index + 1].keys
-                node.children[index].sibling = node.children[index + 1].sibling
-            else:
-                node.children[index].keys = node.children[index].keys + [node.keys[index]] + node.children[
-                    index + 1].keys
-                node.children[index].children = node.children[index].children + node.children[index + 1].children
-            node.children.remove(node.children[index + 1])
-            node.keys.remove(node.children[index])
-            if node.keys:
-                return node
-            else:
-                node.children[0].parent = None
-                self.__root = node.children[0]
-                del node
-                return self.__root
+    <span class="token keyword">def</span> <span class="token function">delete</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> delete_value<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">def</span> <span class="token function">merge</span><span class="token punctuation">(</span>node<span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            <span class="token keyword">if</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+                node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys <span class="token operator">+</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys
+                node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>sibling <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>sibling
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>keys <span class="token operator">+</span> <span class="token punctuation">[</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">]</span> <span class="token operator">+</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>
+                    index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>keys
+                node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">.</span>children <span class="token operator">+</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>children
+            node<span class="token punctuation">.</span>children<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+            node<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">:</span>
+                <span class="token keyword">return</span> node
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                node<span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>parent <span class="token operator">=</span> <span class="token boolean">None</span>
+                self<span class="token punctuation">.</span>__root <span class="token operator">=</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+                <span class="token keyword">del</span> node
+                <span class="token keyword">return</span> self<span class="token punctuation">.</span>__root
 
-        def delete_node(value, node):
-            log("deleting {} from node: {}".format(value, node))
-            if node.is_leaf:
-                log("node is leaf")
-                _index = bisect_left(node.keys, value)
-                try:
-                    node_ = node.keys[_index]
-                except IndexError:
-                    return False
-                else:
-                    if node_ != value:
-                        return False
-                    else:
-                        node.keys.remove(value)
-                        return True
-            else:
-                log("traversing internal node for deleting value")
-                _index = bisect_right(node.keys, value)
-                log("encountered index: {} having child values: {}".format(_index, node.children[_index]))
-                if _index <= len(node.keys):
-                    # print(node.children[_index].is_leaf)
-                    # print(node.children[_index], node.children[_index].total_keys, node.children[_index].degree / 2, node.children[_index].is_empty)
-                    if not node.children[_index].is_empty:
-                        return delete_node(value, node.children[_index])
-                    elif not node.children[_index - 1].is_empty:
-                        self.traverse_left_to_right(node, _index - 1)
-                        return delete_node(value, node.children[_index])
-                    else:
-                        return delete_node(value, merge(node, _index))
-        delete_node(delete_value, self.__root)
+        <span class="token keyword">def</span> <span class="token function">delete_node</span><span class="token punctuation">(</span>value<span class="token punctuation">,</span> node<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            log<span class="token punctuation">(</span><span class="token string">"deleting {} from node: {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>value<span class="token punctuation">,</span> node<span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> node<span class="token punctuation">.</span>is_leaf<span class="token punctuation">:</span>
+                log<span class="token punctuation">(</span><span class="token string">"node is leaf"</span><span class="token punctuation">)</span>
+                _index <span class="token operator">=</span> bisect_left<span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+                <span class="token keyword">try</span><span class="token punctuation">:</span>
+                    node_ <span class="token operator">=</span> node<span class="token punctuation">.</span>keys<span class="token punctuation">[</span>_index<span class="token punctuation">]</span>
+                <span class="token keyword">except</span> IndexError<span class="token punctuation">:</span>
+                    <span class="token keyword">return</span> <span class="token boolean">False</span>
+                <span class="token keyword">else</span><span class="token punctuation">:</span>
+                    <span class="token keyword">if</span> node_ <span class="token operator">!=</span> value<span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> <span class="token boolean">False</span>
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        node<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>value<span class="token punctuation">)</span>
+                        <span class="token keyword">return</span> <span class="token boolean">True</span>
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                log<span class="token punctuation">(</span><span class="token string">"traversing internal node for deleting value"</span><span class="token punctuation">)</span>
+                _index <span class="token operator">=</span> bisect_right<span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">,</span> value<span class="token punctuation">)</span>
+                log<span class="token punctuation">(</span><span class="token string">"encountered index: {} having child values: {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>_index<span class="token punctuation">,</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">if</span> _index <span class="token operator">&lt;=</span> <span class="token builtin">len</span><span class="token punctuation">(</span>node<span class="token punctuation">.</span>keys<span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    <span class="token comment"># print(node.children[_index].is_leaf)</span>
+                    <span class="token comment"># print(node.children[_index], node.children[_index].total_keys, node.children[_index].degree / 2, node.children[_index].is_empty)</span>
+                    <span class="token keyword">if</span> <span class="token operator">not</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">.</span>is_empty<span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> delete_node<span class="token punctuation">(</span>value<span class="token punctuation">,</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                    <span class="token keyword">elif</span> <span class="token operator">not</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>is_empty<span class="token punctuation">:</span>
+                        self<span class="token punctuation">.</span>traverse_left_to_right<span class="token punctuation">(</span>node<span class="token punctuation">,</span> _index <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
+                        <span class="token keyword">return</span> delete_node<span class="token punctuation">(</span>value<span class="token punctuation">,</span> node<span class="token punctuation">.</span>children<span class="token punctuation">[</span>_index<span class="token punctuation">]</span><span class="token punctuation">)</span>
+                    <span class="token keyword">else</span><span class="token punctuation">:</span>
+                        <span class="token keyword">return</span> delete_node<span class="token punctuation">(</span>value<span class="token punctuation">,</span> merge<span class="token punctuation">(</span>node<span class="token punctuation">,</span> _index<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        delete_node<span class="token punctuation">(</span>delete_value<span class="token punctuation">,</span> self<span class="token punctuation">.</span>__root<span class="token punctuation">)</span>
 
-def _test():
-    # test_lis = [0, 1, 11, 1, 2, 22, 13, 14, 4, 5, 23, 1, 51, 12, 31]
-    test_lis = [10, 1, 159, 200, 18, 90, 8, 17, 9]
-    # test_lis = range(10)
-    b = BPlusTree(degree=4)
-    for val in test_lis:
-        b.insert(val)
-        print("----------- B+ TREE AFTER INSERT : {:3d} -----------".format(val))
-        b.pretty_print()
-    # print("searching range..........")
-    # result = b.search_range(1, 12)
-    search_start, search_end = 1, 23
-    print("----- Searching in batch for {} to {} -----".format(search_start, search_end))
-    print("Result*: {} \n (*distinct values)".format(b.search(search_start, search_end)))
-    for delete_val in [200, 18, 9]:
-        print("----- DELETING {} -----".format(delete_val))
-        b.delete(delete_val)
-        print("----------- B+ TREE AFTER DELETING : {:3d} -----------".format(delete_val))
-        b.pretty_print()
+<span class="token keyword">def</span> <span class="token function">_test</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment"># test_lis = [0, 1, 11, 1, 2, 22, 13, 14, 4, 5, 23, 1, 51, 12, 31]</span>
+    test_lis <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">159</span><span class="token punctuation">,</span> <span class="token number">200</span><span class="token punctuation">,</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token number">90</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">17</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">]</span>
+    <span class="token comment"># test_lis = range(10)</span>
+    b <span class="token operator">=</span> BPlusTree<span class="token punctuation">(</span>degree<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span> val <span class="token keyword">in</span> test_lis<span class="token punctuation">:</span>
+        b<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>val<span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"----------- B+ TREE AFTER INSERT : {:3d} -----------"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>val<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment"># print("searching range..........")</span>
+    <span class="token comment"># result = b.search_range(1, 12)</span>
+    search_start<span class="token punctuation">,</span> search_end <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">23</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"----- Searching in batch for {} to {} -----"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>search_start<span class="token punctuation">,</span> search_end<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Result*: {} \n (*distinct values)"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>b<span class="token punctuation">.</span>search<span class="token punctuation">(</span>search_start<span class="token punctuation">,</span> search_end<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span> delete_val <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token number">200</span><span class="token punctuation">,</span> <span class="token number">18</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"----- DELETING {} -----"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>delete_val<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        b<span class="token punctuation">.</span>delete<span class="token punctuation">(</span>delete_val<span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"----------- B+ TREE AFTER DELETING : {:3d} -----------"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>delete_val<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
 
 
-if __name__ == "__main__":
-    from collections import OrderedDict
-    choices = OrderedDict({
-        1: "Insert",
-        2: "Batch Insert",
-        3: "Delete",
-        4: "Search",
-        5: "Search Range",
-        6: "Terminate"
-    })
-    degree = input("Enter Degree of tree[4]: ")
-    b = BPlusTree(degree=int(degree) if degree else 4)
-    while True:
-        print("\n".join("{} {}".format(key, val) for key, val in choices.items()))
-        choice = int(input("Enter Choice: "))
-        if choice == 1:
-            val = int(input("Enter number to insert: "))
-            b.insert(val)
-            b.pretty_print()
-        elif choice == 2:
-            _values = map(int, input("Enter numbers (space separated): ").split())
-            for val in _values:
-                b.insert(val)
-                b.pretty_print()
-        elif choice == 3:
-            val = int(input("Enter number to delete: "))
-            b.delete(val)
-            b.pretty_print()
-        elif choice == 4:
-            val = int(input("Enter number to search: "))
-            b.search(val, val)
-            b.pretty_print()
-        elif choice == 5:
-            start = int(input("Enter start number of range: "))
-            end = int(input("Enter end number of range: "))
-            b.search(start, end)
-            b.pretty_print()
-        else:
-            print("Thanks for using the service!!")
-            break
-```
-Results
--------
-![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/01.png)
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">"__main__"</span><span class="token punctuation">:</span>
+    <span class="token keyword">from</span> collections <span class="token keyword">import</span> OrderedDict
+    choices <span class="token operator">=</span> OrderedDict<span class="token punctuation">(</span><span class="token punctuation">{</span>
+        <span class="token number">1</span><span class="token punctuation">:</span> <span class="token string">"Insert"</span><span class="token punctuation">,</span>
+        <span class="token number">2</span><span class="token punctuation">:</span> <span class="token string">"Batch Insert"</span><span class="token punctuation">,</span>
+        <span class="token number">3</span><span class="token punctuation">:</span> <span class="token string">"Delete"</span><span class="token punctuation">,</span>
+        <span class="token number">4</span><span class="token punctuation">:</span> <span class="token string">"Search"</span><span class="token punctuation">,</span>
+        <span class="token number">5</span><span class="token punctuation">:</span> <span class="token string">"Search Range"</span><span class="token punctuation">,</span>
+        <span class="token number">6</span><span class="token punctuation">:</span> <span class="token string">"Terminate"</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    degree <span class="token operator">=</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter Degree of tree[4]: "</span><span class="token punctuation">)</span>
+    b <span class="token operator">=</span> BPlusTree<span class="token punctuation">(</span>degree<span class="token operator">=</span><span class="token builtin">int</span><span class="token punctuation">(</span>degree<span class="token punctuation">)</span> <span class="token keyword">if</span> degree <span class="token keyword">else</span> <span class="token number">4</span><span class="token punctuation">)</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token string">"{} {}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> val<span class="token punctuation">)</span> <span class="token keyword">for</span> key<span class="token punctuation">,</span> val <span class="token keyword">in</span> choices<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        choice <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter Choice: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> choice <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span>
+            val <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter number to insert: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>val<span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">elif</span> choice <span class="token operator">==</span> <span class="token number">2</span><span class="token punctuation">:</span>
+            _values <span class="token operator">=</span> <span class="token builtin">map</span><span class="token punctuation">(</span><span class="token builtin">int</span><span class="token punctuation">,</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter numbers (space separated): "</span><span class="token punctuation">)</span><span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token keyword">for</span> val <span class="token keyword">in</span> _values<span class="token punctuation">:</span>
+                b<span class="token punctuation">.</span>insert<span class="token punctuation">(</span>val<span class="token punctuation">)</span>
+                b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">elif</span> choice <span class="token operator">==</span> <span class="token number">3</span><span class="token punctuation">:</span>
+            val <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter number to delete: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>delete<span class="token punctuation">(</span>val<span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">elif</span> choice <span class="token operator">==</span> <span class="token number">4</span><span class="token punctuation">:</span>
+            val <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter number to search: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>search<span class="token punctuation">(</span>val<span class="token punctuation">,</span> val<span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">elif</span> choice <span class="token operator">==</span> <span class="token number">5</span><span class="token punctuation">:</span>
+            start <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter start number of range: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            end <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token builtin">input</span><span class="token punctuation">(</span><span class="token string">"Enter end number of range: "</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>search<span class="token punctuation">(</span>start<span class="token punctuation">,</span> end<span class="token punctuation">)</span>
+            b<span class="token punctuation">.</span>pretty_print<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Thanks for using the service!!"</span><span class="token punctuation">)</span>
+            <span class="token keyword">break</span>
+</code></pre>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>all leaves at the same lowest level</li>
+<li>all nodes at least half full (except root)<br>
+Let 𝑓 be the degree of tree and n be the total number of data then</li>
+</ul>
 
-![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/02.png)
+<table>
+<thead>
+<tr>
+<th align="right"></th>
+<th align="center">Max # pointers</th>
+<th align="center">Max # keys</th>
+<th align="center">Min # pointers</th>
+<th align="center">Min # keys</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">Non-leaf</td>
+<td align="center">𝑓</td>
+<td align="center">𝑓 − 1</td>
+<td align="center">⌈𝑓/2⌉</td>
+<td align="center">⌈𝑓/2⌉ − 1</td>
+</tr>
+<tr>
+<td align="right">Root</td>
+<td align="center">𝑓</td>
+<td align="center">𝑓 − 1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="right">Leaf</td>
+<td align="center">𝑓</td>
+<td align="center">𝑓 − 1</td>
+<td align="center">⌊𝑓/2⌋</td>
+<td align="center">⌊𝑓/2⌋</td>
+</tr>
+</tbody>
+</table><ul>
+<li>Number of disk accesses proportional to the height of the B-tree.</li>
+<li>The <em><strong>worst-case height</strong></em> of a B+ tree is:<br>
+<span class="katex--display"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>h</mi><mo>∝</mo><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mfrac><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow><mn>2</mn></mfrac><mo>∼</mo><mi>O</mi><mo>(</mo><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">  
+h \propto \log_f{\frac{n +1}{2}} \sim O(\log_fn)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 0.69444em; vertical-align: 0em;"></span><span class="mord mathit">h</span><span class="mspace" style="margin-right: 0.277778em;"></span><span class="mrel">∝</span><span class="mspace" style="margin-right: 0.277778em;"></span></span><span class="base"><span class="strut" style="height: 2.00744em; vertical-align: -0.686em;"></span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 1.32144em;"><span class="" style="top: -2.314em;"><span class="pstrut" style="height: 3em;"></span><span class="mord"><span class="mord">2</span></span></span><span class="" style="top: -3.23em;"><span class="pstrut" style="height: 3em;"></span><span class="frac-line" style="border-bottom-width: 0.04em;"></span></span><span class="" style="top: -3.677em;"><span class="pstrut" style="height: 3em;"></span><span class="mord"><span class="mord mathit">n</span><span class="mspace" style="margin-right: 0.222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right: 0.222222em;"></span><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.686em;"><span class=""></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span><span class="mspace" style="margin-right: 0.277778em;"></span><span class="mrel">∼</span><span class="mspace" style="margin-right: 0.277778em;"></span></span><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></span></li>
+</ul>
 
-![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/03.png)
-
-![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/04.png)
-
-Analysis
------------
-- all leaves at the same lowest level
-- all nodes at least half full (except root)
-Let 𝑓 be the degree of tree and n be the total number of data then
-
-|    | Max # pointers | Max # keys | Min # pointers | Min # keys
-| --: | :-----: | :-----: | :-----: | :-----:
-| Non-leaf | 𝑓 | 𝑓 − 1 | ⌈𝑓/2⌉ | ⌈𝑓/2⌉ − 1
-| Root | 𝑓 | 𝑓 − 1 | 2 | 1
-| Leaf | 𝑓 | 𝑓 − 1 | ⌊𝑓/2⌋ | ⌊𝑓/2⌋
-
-- Number of disk accesses proportional to the height of the B-tree.
-- The ***worst-case height*** of a B+ tree is:
-
-![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/equation.JPG)
-
-| | Time Complexity | Remarks
-| -: | -- | --
-| height | $O(\log_fn)$ | 
-| search | $O(f\log_fn)$ | linear search inside each nodes
-| search | $O(\log_2f\log_fn)$  | binary search inside each node
-| insert | $O(\log_fn)$ | if splitting not require
-| insert | $O(f\log_fn)$  | if splitting require
-| insert |  $O(\log_fn)$  | if merge not require  
-| insert |  $O(f\log_fn)$  | if merge require
+<table>
+<thead>
+<tr>
+<th align="right"></th>
+<th>Time Complexity</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">height</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">search</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><mi>f</mi><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(f\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span style="margin-right: 0.10764em;" class="mord mathit">f</span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>linear search inside each nodes</td>
+</tr>
+<tr>
+<td align="right">search</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><msub><mi>log</mi><mo>⁡</mo><mn>2</mn></msub><mi>f</mi><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(\log_2f\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.206968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.24414em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span style="margin-right: 0.10764em;" class="mord mathit">f</span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>binary search inside each node</td>
+</tr>
+<tr>
+<td align="right">insert</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>if splitting not require</td>
+</tr>
+<tr>
+<td align="right">insert</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><mi>f</mi><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(f\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span style="margin-right: 0.10764em;" class="mord mathit">f</span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>if splitting require</td>
+</tr>
+<tr>
+<td align="right">insert</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>if merge not require</td>
+</tr>
+<tr>
+<td align="right">insert</td>
+<td><span class="katex--inline"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>O</mi><mo>(</mo><mi>f</mi><msub><mi>log</mi><mo>⁡</mo><mi>f</mi></msub><mi>n</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">O(f\log_fn)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height: 1.13025em; vertical-align: -0.380248em;"></span><span style="margin-right: 0.02778em;" class="mord mathit">O</span><span class="mopen">(</span><span style="margin-right: 0.10764em;" class="mord mathit">f</span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mop"><span class="mop">lo<span style="margin-right: 0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height: 0.241968em;"><span class="" style="top: -2.45586em; margin-right: 0.05em;"><span class="pstrut" style="height: 2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span style="margin-right: 0.10764em;" class="mord mathit mtight">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height: 0.380248em;"><span class=""></span></span></span></span></span></span><span class="mspace" style="margin-right: 0.166667em;"></span><span class="mord mathit">n</span><span class="mclose">)</span></span></span></span></span></td>
+<td>if merge require</td>
+</tr>
+</tbody>
+</table>
