@@ -1,12 +1,21 @@
 #!usr/bin/python3
 # coding=utf-8
 """
-some terminology of python:
+By Gahan Saraiya
+B+ Tree Implementation : https://github.com/gahan9/DS_lab/blob/master/btree_implementation/bPlusTree.py
+
+some terminology of python used for variables in this code:
 _var => (convention only) underscore prefix is just a hint to programmer that a variable or method starting with a single underscore is intended for internal use
 var_ => (convention only) to brake name conflict
 __var => “dunders” (name mangling) rewrite the attribute name in order to avoid naming conflicts in subclasses.
             interpreter changes the name of the variable in a way that makes it harder to create collisions when the class is extended later.
+__var__ => magic methods
+// => Integer division (5//2 returns 2)
 """
+
+__author__ = "Gahan Saraiya"
+
+__link__ = "https://github.com/gahan9/DS_lab/blob/master/btree_implementation/bPlusTree.py"
 
 import math
 import logging
@@ -16,7 +25,6 @@ from datetime import datetime
 from bisect import bisect_right, bisect_left
 from collections import deque
 
-__author__ = "Gahan Saraiya"
 DEBUG = False
 LOG_DIR = "."
 logger = logging.getLogger('bPlusTree')
@@ -431,16 +439,19 @@ if __name__ == "__main__":
         elif choice == 3:
             val = int(input("Enter number to delete: "))
             b.delete(val)
+            print("----------- B+ TREE AFTER DELETING : {:3d} -----------".format(val))
             b.pretty_print()
         elif choice == 4:
             val = int(input("Enter number to search: "))
             b.search(val, val)
             b.pretty_print()
         elif choice == 5:
-            start = int(input("Enter start number of range: "))
-            end = int(input("Enter end number of range: "))
-            b.search(start, end)
-            b.pretty_print()
+            search_start = int(input("Enter start number of range: "))
+            search_end = int(input("Enter end number of range: "))
+            result = b.search(search_start, search_end)
+            print("----- Searching in batch for {} to {} -----".format(search_start, search_end))
+            print("Result*: {} \n (*distinct values)".format(b.search(search_start, search_end)))
+            # b.pretty_print()
         else:
             print("Thanks for using the service!!")
             break
