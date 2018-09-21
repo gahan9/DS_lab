@@ -11,6 +11,7 @@ __var => “dunders” (name mangling) rewrite the attribute name in order to av
 import math
 import logging
 import os
+import random
 from datetime import datetime
 from bisect import bisect_right, bisect_left
 from collections import deque
@@ -51,7 +52,6 @@ class InternalNode(object):
         :param degree: specify degree of btree  # default degree set to 4
         """
         self.degree = degree
-        self.max_data = self.degree-1  # number of keys per node
         self.keys = []  # store keys/data values
         self.children = []  # store child nodes (list of instances of BtreeNode); empty list if node is leaf node
         self.parent = None
@@ -70,11 +70,15 @@ class InternalNode(object):
     @property
     def is_balanced(self):
         # return False if total keys exceeds max accommodated keys (degree - 1)
-        return self.total_keys <= self.max_data
+        return self.total_keys <= self.degree - 1
+
+    @property
+    def is_full(self):
+        return self.total_keys >= self.degree
 
     @property
     def is_empty(self):
-        return self.total_keys <= math.floor(self.degree / 2)
+        return self.total_keys < (self.degree + 1) // 2
 
 
 class LeafNode(object):
@@ -102,11 +106,15 @@ class LeafNode(object):
     @property
     def is_balanced(self):
         # return False if total keys exceeds max accommodated data (degree - 1)
-        return self.total_keys <= self.degree - 1
+        return self.total_keys < self.degree
+
+    @property
+    def is_full(self):
+        return not self.is_balanced
 
     @property
     def is_empty(self):
-        return self.total_keys <= math.ceil(self.degree / 2)
+        return self.total_keys < math.floor(self.degree / 2)
 
 
 class BPlusTree(object):
@@ -115,7 +123,7 @@ class BPlusTree(object):
         self.__root = LeafNode(degree=degree)
         self.__leaf = self.__root
 
-    def search_node(self, start_node, value):
+    def search_key(self, start_node, value):
         """
 
         :param start_node: get root or any non leaf node
@@ -123,23 +131,11 @@ class BPlusTree(object):
         :return: most matching leaf node
         """
         if start_node.is_leaf:
-            return start_node
+            _index = bisect_left(start_node.keys, value)
+            return _index, start_node
         else:
-            for index in range(len(start_node.keys)-1):  # search for next possible node
-                if value < start_node.keys[index]:  # key is greater than value to be search
-                    return self.search_node(start_node.children[0], value)
-                elif start_node.keys[index] <= value < start_node.keys[index+1]:
-                    return self.search_node(start_node.children[index], value)
-                else:
-                    return self.search_node(start_node.children[index+1], value)
-
-    def search_key(self, node, key):
-        if node.is_leaf:
-            _index = bisect_left(node.keys, key)
-            return _index, node
-        else:
-            _index = bisect_right(node.keys, key)
-            return self.search_key(node.children[_index], key)
+            _index = bisect_right(start_node.keys, value)
+            return self.search_key(start_node.children[_index], value)
 
     def search(self, start=None, end=None):
         """
@@ -154,9 +150,9 @@ class BPlusTree(object):
 
         if start is None:
             while True:
-                for val in leaf.keys:
-                    if val <= end:
-                        _result.append(val)
+                for value in leaf.keys:
+                    if value <= end:
+                        _result.append(value)
                     else:
                         return _result
                 if leaf.sibling is None:
@@ -200,43 +196,47 @@ class BPlusTree(object):
                             _result.extend(_node2.keys[:_index2 + 1])
                             return _result
                         else:
-                            _result.extend(node_.sibling.keys)
-                            node_ = node_.sibling
+                            try:
+                                _result.extend(node_.sibling.keys)
+                                node_ = node_.sibling
+                            except AttributeError:
+                                return _result
 
-    def traverse(self):
-        _result, _leaf = [], self.__leaf
+    def traverse(self, _node):
+        _result = []
+        _result.extend(_node.keys)
+        if getattr(_node, "sibling", None) is None:
+            return _result
+        for i in range(0, len(_node.sibling))[::-1]:
+            _result.extend(self.traverse(_node.sibling[i]))
         while True:
-            _result.extend(_leaf.keys)
-            if _leaf.sibling is None:
-                return _result
-            else:
-                _leaf = _leaf.sibling
+            pass
 
     def pretty_print(self):
-        print("B+ Tree: \n")
+        # print("B+ Tree:")
         queue, height = deque(), 0
         queue.append([self.__root, height])
         while True:
             try:
                 node, height_ = queue.popleft()
+                # print("adding node: {}".format(node))
             except IndexError:
                 return
             else:
                 if not node.is_leaf:
-                    print("{} The height is {}".format(node.keys, height_))
+                    print("Internal Node : {:} \theight >> {}".format(node.keys, height_))
                     if height_ == height:
                         height += 1
                     queue.extend([[i, height] for i in node.children])
                 else:
-                    print("{} leaf is >> {}".format([i for i in node.keys], height_))
+                    print("Leaf Node     : {} \theight >> {}".format([i for i in node.keys], height_))
 
     def insert(self, value):
-        node = self.__root
         # log("parent:{} leaf:{} node:{}\tkeys:{}\t children:{}".format(node.parent, node.is_leaf, node, node.keys, getattr(node, 'children', '0')))
 
         def split_leaf_node(node):
             log("splitting leaf node: {}".format(node.keys))
-            mid = (self.degree + 1) // 2  # integer division in python3
+            mid = self.degree // 2  # integer division in python3
             new_leaf = LeafNode(self.degree)
             new_leaf.keys = node.keys[mid:]
             if node.parent is None:  # None and 0 are to be treated as different value
@@ -245,10 +245,12 @@ class BPlusTree(object):
                 node.parent = new_leaf.parent = parent_node
                 self.__root = parent_node
             else:
-                i = node.parent.children.index(node)
-                node.parent.keys.insert(i, node.keys[mid])
-                node.parent.children.insert(i + 1, new_leaf)
+                _index = node.parent.children.index(node)
+                node.parent.keys.insert(_index, node.keys[mid])
+                node.parent.children.insert(_index + 1, new_leaf)
                 new_leaf.parent = node.parent
+                if not node.parent.is_balanced:
+                    split_internal_node(node.parent)
             node.keys = node.keys[:mid]
             node.sibling = new_leaf
             log("{} --- {} --- {}".format(node, node.sibling, self.__root.children))
@@ -273,6 +275,8 @@ class BPlusTree(object):
                 _index = node_.parent.children.index(node_)
                 node_.parent.keys.insert(_index, node_.keys[mid - 1])
                 node_.parent.children.insert(_index + 1, new_node)
+                if not node_.parent.is_balanced:
+                    split_internal_node(node_.parent)
             node_.keys = node_.keys[:mid - 1]
             node_.children = node_.children[:mid]
             return node_.parent
@@ -300,7 +304,7 @@ class BPlusTree(object):
                     log(_node.keys, _node.children, _index)
                     insert_node(_node.children[_index])
 
-        insert_node(node)
+        insert_node(self.__root)
 
     @staticmethod
     def traverse_left_to_right(node, index):
@@ -356,18 +360,20 @@ class BPlusTree(object):
                 try:
                     node_ = node.keys[_index]
                 except IndexError:
-                    return -1
+                    return False
                 else:
                     if node_ != value:
-                        return -1
+                        return False
                     else:
                         node.keys.remove(value)
-                        return 0
+                        return True
             else:
                 log("traversing internal node for deleting value")
                 _index = bisect_right(node.keys, value)
                 log("encountered index: {} having child values: {}".format(_index, node.children[_index]))
-                if _index < len(node.keys):
+                if _index <= len(node.keys):
+                    # print(node.children[_index].is_leaf)
+                    # print(node.children[_index], node.children[_index].total_keys, node.children[_index].degree / 2, node.children[_index].is_empty)
                     if not node.children[_index].is_empty:
                         return delete_node(value, node.children[_index])
                     elif not node.children[_index - 1].is_empty:
@@ -377,14 +383,64 @@ class BPlusTree(object):
                         return delete_node(value, merge(node, _index))
         delete_node(delete_value, self.__root)
 
-
-if __name__ == "__main__":
-    test_lis = [0, 1, 11, 1, 2, 22, 13, 14, 4, 11]
+def _test():
+    # test_lis = [0, 1, 11, 1, 2, 22, 13, 14, 4, 5, 23, 1, 51, 12, 31]
+    test_lis = [10, 1, 159, 200, 18, 90, 8, 17, 9]
     # test_lis = range(10)
     b = BPlusTree(degree=4)
     for val in test_lis:
         b.insert(val)
-    b.pretty_print()
-    b.delete(11)
-    b.delete(11)
-    b.pretty_print()
+        print("----------- B+ TREE AFTER INSERT : {:3d} -----------".format(val))
+        b.pretty_print()
+    # print("searching range..........")
+    # result = b.search_range(1, 12)
+    search_start, search_end = 1, 23
+    print("----- Searching in batch for {} to {} -----".format(search_start, search_end))
+    print("Result*: {} \n (*distinct values)".format(b.search(search_start, search_end)))
+    for delete_val in [200, 18, 9]:
+        print("----- DELETING {} -----".format(delete_val))
+        b.delete(delete_val)
+        print("----------- B+ TREE AFTER DELETING : {:3d} -----------".format(delete_val))
+        b.pretty_print()
+
+
+if __name__ == "__main__":
+    from collections import OrderedDict
+    choices = OrderedDict({
+        1: "Insert",
+        2: "Batch Insert",
+        3: "Delete",
+        4: "Search",
+        5: "Search Range",
+        6: "Terminate"
+    })
+    degree = input("Enter Degree of tree[4]: ")
+    b = BPlusTree(degree=int(degree) if degree else 4)
+    while True:
+        print("\n".join("{} {}".format(key, val) for key, val in choices.items()))
+        choice = int(input("Enter Choice: "))
+        if choice == 1:
+            val = int(input("Enter number to insert: "))
+            b.insert(val)
+            b.pretty_print()
+        elif choice == 2:
+            _values = map(int, input("Enter numbers (space separated): ").split())
+            for val in _values:
+                b.insert(val)
+                b.pretty_print()
+        elif choice == 3:
+            val = int(input("Enter number to delete: "))
+            b.delete(val)
+            b.pretty_print()
+        elif choice == 4:
+            val = int(input("Enter number to search: "))
+            b.search(val, val)
+            b.pretty_print()
+        elif choice == 5:
+            start = int(input("Enter start number of range: "))
+            end = int(input("Enter end number of range: "))
+            b.search(start, end)
+            b.pretty_print()
+        else:
+            print("Thanks for using the service!!")
+            break
