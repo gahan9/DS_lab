@@ -454,6 +454,15 @@ if __name__ == "__main__":
             print("Thanks for using the service!!")
             break
 ```
+Results
+-------
+![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/01.png)
+
+![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/02.png)
+
+![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/03.png)
+
+![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/04.png)
 
 Analysis
 -----------
@@ -469,9 +478,8 @@ Let 𝑓 be the degree of tree and n be the total number of data then
 
 - Number of disk accesses proportional to the height of the B-tree.
 - The ***worst-case height*** of a B+ tree is:
-$$  
-h \propto \log_f{\frac{n +1}{2}} \sim O(\log_fn)
-$$
+
+![](https://raw.githubusercontent.com/gahan9/DS_lab/master/practical_3/equation.JPG)
 
 | | Time Complexity | Remarks
 | -: | -- | --
