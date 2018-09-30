@@ -87,83 +87,27 @@
 
 \section{Introduction}
 \paragraph{}
-The data can not be always considered to be fit in one size and the goal of this article is to deduce the impact of various storage format. 
+Extendsible Hashing is a dynamic hash system which treats hash as bit string. It has hierarchical nature as it extends buffer as needed. Thus buckets are added dynamically.
 
-Data needs to be stored in persistence storage, the focus is always to retrieve data efficiently.
-To achieve that we need to have optimal storage mechanism/schemes that allows to access the data efficiently.   
-
-
-\section{Static data placement on disk pages}
-\subsection{N-ary Storage Model (NSM)}
-	Also known as Slotted Page.
-	\begin{itemize}
-		\item record are stored sequentially on data pages
-		\item Accesses full record (all attributes of record)
-		\tick attributes of a same record are stored together
-		\fail Doesn't work well on modern memory hierarchies
-	\end{itemize}
-	
-	\paragraph{Flow}The whole page from disk is loaded in to main memory and then block(s) are fetched CPU cache
-	\\
-	\textbf{Impact}
-	\begin{itemize}
-		\tick Best results if full access to record is require
-		\fail Partial record access is slow. Due to Fixed page layout it wastes I/O bandwidth
-		\fail At CPU cache low spatial locality
-	\end{itemize}
-
-\subsection{Decomposition Storage Model (DSM)}
-	Original Table is partitioned in to single attribute sub-tables.
-	Each sub-table is stored in separate NSM page
-	\begin{itemize}
-		\item $N$-attribute table stored in to $N$ sub-tables
-		\tick Saves I/O (eliminates unnecessary I/O)
-		\fail Hard to modify/construct record afterwards
-	\end{itemize}
-	
-	\paragraph{Flow} 
-	Only required NSM page(s) (single attributed sub-table) is/are loaded in to main memory and blocks are fetched from loaded page
-	\textbf{Impact}
-	\begin{itemize}
-		\tick Best results if partial access to record is require
-		\fail full record access require reconstruction which may lead to unnecessary I/O and performance degraded compare to NSM
-	\end{itemize}
-
-\subsection{Partition Attribute Across (PAX)}
-	In single page it partitions data for spacial locality by attribute
-	\paragraph{Flow} 
-	Likewise in NSM it loads whole PAX page from disk in to main memory. partitioned data are stored in to contiguous block and only require block(s) needs to be fetched
-	\textbf{Impact}
-	\begin{itemize}
-		\tick Optimizes communication/transfer between Main memory and CPU cache memory (Increases Hit Ratio)
-		\tick Optimal solution for both full and partial record access
-	\end{itemize}
-
-\section{Summary}
-
-
-\setlength{\tabcolsep}{10pt} % Default value: 6pt
-\renewcommand{\arraystretch}{1.5} % Default value: 1
-\begin{table}[!ht]
-\begin{flushleft}
-\caption{Comparison of NSM, DSM and PAX}
-\begin{tabular}{ l  c c c c }
-
-\hline
-{Performance} &\multicolumn{2}{ c }{\textbf{Cache$\leftrightarrow$Memory}} & \multicolumn{2}{ c }{\textbf{Memory$\leftrightarrow$Disk}}\\ 
-\cline{1-5}
-\textbf{Page Layout} & \textbf{full record access} & \textbf{partial record access} & \textbf{full-record access} & \textbf{partial record access} \\
-\hline
-NSM & \CheckmarkBold & \XSolidBrush & \CheckmarkBold & \XSolidBrush \\ 
-DSM & \XSolidBrush & \CheckmarkBold & \XSolidBrush & \CheckmarkBold \\ 
-PAX & \CheckmarkBold & \CheckmarkBold & \CheckmarkBold & \XSolidBrush \\ 
- \hline
-\end{tabular}
-\end{flushleft}
-\end{table}
+\section{Logic}
+\begin{itemize}
+	\item Create Global bucket and initialize with single empty local bucket
+	\item Add item in bucket
+	\item To add item Least Significant bits (LSB) are considered to avoid overhead of recalculating padding MSB (most significant bit)
+	\item until bucket overflows it can accommodate data
+	\item When bucket is full global bucket capacity is to be increased by factor of two and overflowed local buckets are to be spitted
+\end{itemize}
 
 \section{Implementation}
-\inputminted[frame=single, linenos]{python}{extendsibleHashing.py}
+The code is implemented in Python as below
+
+\inputminted[frame=lines, breaklines, linenos]{python}{extendsibleHashing.py}
+
+\section*{Output 1}
+\inputminted[frame=lines, breaklines]{text}{output1.txt}
+
+\section*{Output 2}
+\inputminted[frame=lines, breaklines]{text}{output2.txt}
 %----------------------------------------------------------------------------------------
 %\end{multicols}
 \end{document}

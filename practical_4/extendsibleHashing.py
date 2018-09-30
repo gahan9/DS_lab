@@ -113,5 +113,5 @@ def test(input_nums=10):
 
 
 if __name__ == "__main__":
-    TEST_NUM = 5
-    test()
+    TEST_NUM = 25
+    test(TEST_NUM)
