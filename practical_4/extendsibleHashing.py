@@ -17,7 +17,7 @@ class Bucket(object):
     def __init__(self, bucket_size=2):
         self.bucket_size = bucket_size
         self.data = {}
-        self.total_data = 0
+        self.total_data = 0  # local depth
 
     def is_full(self):
         return len(self.data) >= self.bucket_size
@@ -45,7 +45,7 @@ class Bucket(object):
 class GlobalBucket(object):
     def __init__(self, bucket_size=2):
         self.bucket_size = bucket_size  # max size of each bucket
-        self.total_global_data = 0
+        self.total_global_data = 0  # global depth
         bucket = Bucket(self.bucket_size)
         self.buckets = [bucket]  # list of buckets in global buckets
 
@@ -95,7 +95,7 @@ def test(input_nums=10):
     :param input_nums: number of inputs to be added
     :return:
     """
-    BUCKET_SIZE = 3  # defining single bucket size
+    BUCKET_SIZE = 5  # defining single bucket size
     g = GlobalBucket(BUCKET_SIZE)
     inputs = [random.randint(1, 1000) for i in range(input_nums)]
     print("Bucket Size: ", BUCKET_SIZE)
@@ -106,9 +106,10 @@ def test(input_nums=10):
         g.add(i, i)
     print("-"*40)
     print("global bucket > ", g)
+    print("global depth > ", g.total_global_data)
     for _bucket in g.buckets:
         if _bucket.__repr__():
-            print("-----Exploring bucket: {}".format(_bucket))
+            print("-----Exploring bucket: {} with depth : {}".format(_bucket, _bucket.total_data))
             _bucket.show()
 
 
