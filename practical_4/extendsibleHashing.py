@@ -1,4 +1,7 @@
 # coding=utf-8
+import random
+import math
+
 __author__ = "Gahan Saraiya"
 
 DEBUG = False
@@ -26,12 +29,11 @@ class Bucket(object):
 
     @staticmethod
     def int_to_bin(data, pad_digits):
-        pad_digits = int(pad_digits ** 0.5)
         return bin(data).split('b')[-1].zfill(pad_digits)
 
     def show(self):
         if self.data:
-            _max = max(self.data)
+            _max = int(math.log(max(self.data), 2)) + 1
             for k, v in self.data.items():
                 print(self.int_to_bin(k, _max), v)
 
@@ -86,13 +88,12 @@ class GlobalBucket(object):
         return ", ".join("{}".format(b) for b in self.buckets if b.__repr__())
 
 
-if __name__ == "__main__":
-    TEST_NUM = 5
+def test(input_nums=10):
     BUCKET_SIZE = 3
     g = GlobalBucket(BUCKET_SIZE)
-    inputs = [1, 11, 5, 59, 54, 12, 9, 67]
-    # inputs = [1, 3, 2]
+    inputs = [random.randint(1, 1000) for i in range(input_nums)]
     print("Bucket Size: ", BUCKET_SIZE)
+    print("Total Inputs : ", input_nums)
     print("Input Sequence: ", inputs)
     for i in inputs:
         print_log("*>Adding {} in to bucket".format(i))
@@ -103,3 +104,8 @@ if __name__ == "__main__":
         if _bucket:
             print("-----Exploring bucket: {}".format(_bucket))
             _bucket.show()
+
+
+if __name__ == "__main__":
+    TEST_NUM = 5
+    test()
