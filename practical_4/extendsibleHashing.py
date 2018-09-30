@@ -3,6 +3,7 @@ import random
 import math
 
 __author__ = "Gahan Saraiya"
+__url__ = "https://github.com/gahan9/DS_lab/blob/master/practical_4/extendsibleHashing.py"
 
 DEBUG = False
 
@@ -43,10 +44,10 @@ class Bucket(object):
 
 class GlobalBucket(object):
     def __init__(self, bucket_size=2):
-        self.bucket_size = bucket_size
+        self.bucket_size = bucket_size  # max size of each bucket
         self.total_global_data = 0
         bucket = Bucket(self.bucket_size)
-        self.buckets = [bucket]
+        self.buckets = [bucket]  # list of buckets in global buckets
 
     def get_bucket(self, key):
         return self.buckets[key & ((1 << self.total_global_data) - 1)]
@@ -89,7 +90,12 @@ class GlobalBucket(object):
 
 
 def test(input_nums=10):
-    BUCKET_SIZE = 3
+    """
+    test function to test the implementation
+    :param input_nums: number of inputs to be added
+    :return:
+    """
+    BUCKET_SIZE = 3  # defining single bucket size
     g = GlobalBucket(BUCKET_SIZE)
     inputs = [random.randint(1, 1000) for i in range(input_nums)]
     print("Bucket Size: ", BUCKET_SIZE)
@@ -101,7 +107,7 @@ def test(input_nums=10):
     print("-"*40)
     print("global bucket > ", g)
     for _bucket in g.buckets:
-        if _bucket:
+        if _bucket.__repr__():
             print("-----Exploring bucket: {}".format(_bucket))
             _bucket.show()
 
