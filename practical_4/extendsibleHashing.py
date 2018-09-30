@@ -1,6 +1,4 @@
 # coding=utf-8
-import random
-
 __author__ = "Gahan Saraiya"
 
 DEBUG = False
@@ -99,9 +97,6 @@ if __name__ == "__main__":
     for i in inputs:
         print_log("*>Adding {} in to bucket".format(i))
         g.add(i, i)
-        # print("Bucket after adding {}: {}".format(i, g.buckets))
-    # for i in sorted(inputs):
-    #     print(g.get(i))
     print("-"*40)
     print("global bucket > ", g)
     for _bucket in g.buckets:
