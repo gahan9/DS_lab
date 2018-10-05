@@ -115,4 +115,10 @@ def test(input_nums=10):
 
 if __name__ == "__main__":
     TEST_NUM = 25
+    import sys
+    if len(sys.argv) > 1:
+        try:
+            TEST_NUM = int(sys.argv[1])
+        except:
+            pass
     test(TEST_NUM)
