@@ -125,7 +125,7 @@ The code is implemented in Python as below
 \begin{table}[!ht]
 \begin{flushleft}
 \centering
-\caption{Time Complexity of Extendible Hashing for single record access}
+\caption*{Time Complexity of Extendible Hashing for single record access}
 \begin{tabular}{ l  c c }
 
 \hline
@@ -148,7 +148,10 @@ Access & 1 & 2 \\
 		N & Number of blocks \\
 	\end{tabular}
 \end{table}
-\paragraph{Space Utilization} $\frac{R}{B*N}$
+\paragraph{Space Utilization}
+\begin{equation}
+	\frac{R}{B \times N}
+\end{equation}
 \paragraph{Average Utilization} $\ln{2} \approx 0.69$
 %----------------------------------------------------------------------------------------
 %\end{multicols}
