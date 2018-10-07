@@ -1,8 +1,15 @@
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+*.py[icod]
 *$py.class
+
+# Latex extension
+*.a
+*.aux
+*.out
+*.synctex.gz
+_minted*
 
 # C extensions
 *.so
