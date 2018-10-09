@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Journal Article
 % Database System
-% Practical 4: Extendsible Hashing
+% Practical 3: Implementation of B+ Tree
 %
 % Gahan M. Saraiya
 % 18MCEC10
@@ -49,16 +49,29 @@
 \fancyhead{} % Blank out the default header
 \fancyfoot{} % Blank out the default footer
 
+
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+%       CUSTOM HEADER TEXT
+%----------------------------------------------------------------------------------------
 \fancyhead[C]{Institute of Technology, Nirma University $\bullet$ September 2018} % Custom header text
+%----------------------------------------------------------------------------------------
 
 \fancyfoot[RO,LE]{\thepage} % Custom footer text
 %----------------------------------------------------------------------------------------
+%       PACKAGE for code highlight
+%----------------------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\usepackage{minted} % for highlighting code sytax
+%----------------------------------------------------------------------------------------
 %       TITLE SECTION
 %----------------------------------------------------------------------------------------
-\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 4: Extendsible Hashing}} % Article title
-\author{
-\large
-{\textsc{Gahan Saraiya, 18MCEC10 }}\\[2mm]
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{
+		\underline{Practical 2}\\Implementation of B+ Tree}} % Article title
+\author{\large{\textsc{
+		Gahan M. Saraiya, 18MCEC10 }}\\[2mm]
 %\thanks{A thank you or further information}\\ % Your name
 \normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec10@nirmauni.ac.in}\\[2mm] % Your email address
 }
@@ -68,15 +81,12 @@
 	linkcolor=blue,
 	filecolor=magenta,      
 	urlcolor=cyan,
-	pdfauthor={Gahan Saraiya},
-	pdfcreator={Gahan Saraiya},
-	pdfproducer={Gahan Saraiya},
+	pdfauthor={Gahan M. Saraiya},
+	pdfcreator={Gahan M. Saraiya},
+	pdfproducer={Gahan M. Saraiya},
 }
 %----------------------------------------------------------------------------------------
-\usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
 
-\usepackage{minted} % for highlighting code sytax
 \begin{document}
 \maketitle % Insert title
 \thispagestyle{fancy} % All pages have headers and footers
@@ -87,72 +97,106 @@
 
 \section{Introduction}
 \paragraph{}
-Extendsible Hashing is a dynamic hash system which treats hash as bit string. It has hierarchical nature as it extends buffer as needed. Thus buckets are added dynamically.
+Aim of this practical is to implement algorithm of B+ tree.
 
-\section{Logic}
+Supported Operation
 \begin{itemize}
-	\item Create Global bucket and initialize with single empty local bucket
-	\item Add item in bucket
-	\item To add item Least Significant bits (LSB) are considered to avoid overhead of recalculating padding MSB (most significant bit)
-	\item until bucket overflows it can accommodate data
-	\item When bucket is full global bucket capacity is to be increased by factor of two and overflowed local buckets are to be spitted
+	\item Insert single item
+	\item Insertion in bulk
+	\item Deletion
+	\item Search
+	\item Range Search
 \end{itemize}
 
 \section{Implementation}
-The code is implemented in Python as below
 
-\inputminted[frame=lines, breaklines, linenos]{python}{extendsibleHashing.py}
+\inputminted[frame=lines, breaklines, linenos]{python}{../btree_implementation/bPlusTree.py}
 
-\section*{Output 1}
-\inputminted[frame=lines, breaklines]{text}{output1.txt}
+\subsection*{Output}
+\begin{figure}[H]
+	\includegraphics*[width=440px]{01.png}
+\end{figure}
 
-\section*{Output 2}
-\inputminted[frame=lines, breaklines]{text}{output2.txt}
+\begin{figure}[H]
+	\includegraphics*[width=440px]{02.png}
+\end{figure}
 
-\section*{Output 3}
-\inputminted[frame=lines, breaklines]{text}{output3.txt}
+\begin{figure}[H]
+	\includegraphics*[width=440px]{03.png}
+\end{figure}
+
+\begin{figure}[H]
+	\includegraphics*[width=440px]{04.png}
+\end{figure}
+
+
 
 \section{Summary}
 \begin{itemize}
-	\tick If directory fits in memory then point query requires only $ 1 $ disk access
-	\tick Empty buckets can be merge with it's split image when directory becomes half of size
-	\fail need to maintain local and global depth
-	\fail Even if directory size doubles only on demand/overflow in worst case it may be possible that directory is getting overflow with similar matching bits in which the data stored in it are utilized about fifty percent only (even if buckets are less multiple pointers are pointing to same bucket).
+	\tick all leaves at the same lowest level
+	\tick all nodes at least half full (except root)
+	\tick Supports Range Query
+	\fail sequential search overhead may rise if large number of record in result of range query
 \end{itemize}
 
-\setlength{\tabcolsep}{10pt} % Default value: 6pt
-\renewcommand{\arraystretch}{1.5} % Default value: 1
-\begin{table}[!ht]
-\begin{flushleft}
-\centering
-\caption*{Time Complexity of Extendible Hashing for single record access}
-\begin{tabular}{ l  c c }
-
-\hline
-{} &\multicolumn{2}{ c }{\textbf{Condition}}\\ 
-\cline{1-3}
-\textbf{} & \textbf{directory size < memory size} & \textbf{directory size > memory size} \\
-\hline
-Access & 1 & 2 \\ 
- \hline
-\end{tabular}
-\end{flushleft}
-\end{table}
-
-
-\subsection*{Space Complexity}
 \begin{table}[H]
-	\begin{tabular}{r l}
-		R & Number of records \\
-		B & Block Size \\
-		N & Number of blocks \\
+	Let $f$ be the degree of tree and $n$ be the total number of data then
+	\centering
+	\caption*{Space Complexity}
+	\begin{tabular}{r | c | c | c | c}
+		& \textbf{Max \# pointers} & \textbf{Max \# keys} & \textbf{Min \# pointers} & \textbf{Min \# keys} \\
+		\hline
+		\hline
+		\textbf{Non-leaf} & $f$ & $f - 1$ & $\lceil f/2 \rceil$ & $\lceil f/2 \rceil - 1$ \\
+		\textbf{Root} & $f$ & $f - 1$ & 2 & 1 \\
+		\textbf{Leaf} & $f$ & $f - 1$ & $\lfloor f/2 \rfloor$ & $\lfloor f/2 \rfloor$ \\
 	\end{tabular}
 \end{table}
-\paragraph{Space Utilization}
+
+
+- Number of disk accesses proportional to the height of the B+ tree.
+which is the \textit{\textbf{worst-case height}} of a B+ tree is:
+
 \begin{equation}
-	\frac{R}{B \times N}
+	h \propto \log_f\frac{n+1}{2} \approx O(log_fn)
 \end{equation}
-\paragraph{Average Utilization} $\ln{2} \approx 0.69$
+
+\begin{table}[H]
+	Let $f$ be the degree of tree and $n$ be the total number of data then
+	\centering
+	\caption*{Time Complexity}
+	\begin{tabular}{r | c | l }
+		& \textbf{Time Complexity} & \textbf{Remarks} \\
+		\hline
+		\hline
+		\textbf{height} & $O(\log_fn)$ & \\
+		\textbf{Root} & $O(f\log_fn)$ & linear search inside each nodes \\
+		\textbf{search} & $O(\log_2f\log_fn)$  & binary search inside each node \\
+		\textbf{insert} & $O(\log_fn)$ & if splitting not require \\
+		\textbf{insert} & $O(f\log_fn)$  & if splitting require \\
+		\textbf{insert} &  $O(\log_fn)$  & if merge not require  \\
+		\textbf{insert} &  $O(f\log_fn)$  & if merge require \\
+	\end{tabular}
+\end{table}
+
+%\subsection{Bubble Sort}
+%\begin{figure}[H]
+%	\centering
+%	\includegraphics[scale=0.75]{../analysis/Bubble_sort_(Iterative).png}
+%	\caption{Bubble Sort}
+%\end{figure}
+%
+%\section*{Output 2}
+%\inputminted[frame=lines, breaklines]{text}{output2.txt}
+%
+%\section*{Output 3}
+%\inputminted[frame=lines, breaklines]{text}{output3.txt}
+
+%\section{Summary}
+%\begin{itemize}
+%	\tick If directory fits in memory then point query requires only $ 1 $ disk access
+%	\tick Empty buckets can be merge with it's split image when directory becomes half of size
+%\end{itemize}
 %----------------------------------------------------------------------------------------
 %\end{multicols}
 \end{document}
