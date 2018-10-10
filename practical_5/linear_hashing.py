@@ -50,7 +50,7 @@ class LinearHashing(object):
         if self.threshold_outbound:
             # buffer to be extend
             self.buffer[len(self.buffer)] = []
-            buffer_index = self.hash_function(value, flag=1)
+            buffer_index = self.hash_function(value)
             self.buffer[buffer_index] = self.buffer.setdefault(buffer_index, []) + [value]
             # bucket to be split
             bucket_to_split = self.buffer[self.index_counter]
@@ -85,6 +85,6 @@ if __name__ == "__main__":
     for i in input_lis:
         # print("STATUS:-------")
         # print(">>>>> ", l.buffer)
-        print("{1} Inserting: {0} {1}".format(i, "#"*40))
+        print("{1} Inserting: {0:-3d} {1}".format(i, "#"*5))
         l.insert(i, print_status=0)
     print(l)
