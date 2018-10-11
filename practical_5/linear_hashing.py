@@ -7,17 +7,17 @@ StackOverflow: https://stackoverflow.com/users/story/7664524
 
 Implementation of linear hashing
 """
-from math import log2
+from math import log2, log
 
 
 class LinearHashing(object):
     def __init__(self, *args, **kwargs):
         self.threshold = kwargs.get('threshold', 0.7)
-        self.data_capacity = kwargs.get('data_capacity', 2)  # capacity to store data per bucket
-        self.total_data = 0
-        self.buffer = {0: [], 1: []}
-        self.index_counter = 0
-        self.previous_phase = 1
+        self.data_capacity_per_bucket = kwargs.get('data_capacity_per_bucket', 2)  # capacity to store data per bucket
+        self.total_data = 0  # keep count of total inserted record
+        self.buffer = {key: [] for key in range(2)}  # initial buffer
+        self.index_counter = 0  # keep index counter from where we are supposed to start split in phase
+        self.previous_phase = 1  # keeping phase number to reset index counter
 
     @property
     def current_phase(self):
@@ -25,26 +25,42 @@ class LinearHashing(object):
 
     @property
     def buffer_capacity(self):
-        return self.data_capacity * len(self.buffer)
+        return self.data_capacity_per_bucket * len(self.buffer)
 
     @property
     def threshold_outbound(self):
         return (self.total_data / self.buffer_capacity) > self.threshold
 
     def hash_function(self, value, flag=0):
+        """
+
+        :param value: value on which hash function to be applied
+        :param flag: set flag to 1 if splitting the bucket
+        :return:
+        """
         if not flag:
             # if no splitting require
-            return value % (2 ** self.current_phase)
+            return value % (self.data_capacity_per_bucket ** self.current_phase)
         else:
             # if splitting require
             return value % (2 ** (self.current_phase + 1))
 
     def set_index_counter_if(self):
-        # set index counter from where splitting to be done to 0 when phase changes
+        """
+        set index counter from where splitting to be done to 0 when phase changes
+        :return: None
+        """
         if self.current_phase != self.previous_phase:
             self.index_counter = 0
+            self.previous_phase = self.current_phase
 
     def insert(self, value, print_status=0):
+        """
+
+        :param value: value to be inserted
+        :param print_status: set to 1 if
+        :return:
+        """
         self.set_index_counter_if()
 
         if self.threshold_outbound:
@@ -68,6 +84,7 @@ class LinearHashing(object):
         if print_status:
             print(self.buffer)
             print("INDEX: {}\nCURRENT PHASE: {} \t PREVIOUS PHASE: {}".format(self.index_counter, self.current_phase, self.previous_phase))
+        return True
 
     def delete(self):
         return NotImplementedError
@@ -80,11 +97,13 @@ class LinearHashing(object):
 
 
 if __name__ == "__main__":
-    l = LinearHashing()
+    hash_bucket = LinearHashing(data_capacity_per_bucket=3, threshold=0.7)
     input_lis = [3, 2, 4, 1, 8, 14, 5, 10, 7, 24, 17, 13, 15]
     for i in input_lis:
         # print("STATUS:-------")
         # print(">>>>> ", l.buffer)
-        print("{1} Inserting: {0:-3d} {1}".format(i, "#"*5))
-        l.insert(i, print_status=0)
-    print(l)
+        print("{2}\n{1} Inserting: {0:-3d} {1}".format(i, "#"*5, "#"*50))
+        result = hash_bucket.insert(i, print_status=1)
+        if result:
+            print("Value {} inserted successfully.\n{}".format(i, "#"*50))
+    print(hash_bucket)

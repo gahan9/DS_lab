@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Journal Article
 % Database System
-% Practical 4: Extendsible Hashing
+% Practical 5: Linear Hashing
 %
 % Gahan M. Saraiya
 % 18MCEC10
@@ -49,13 +49,13 @@
 \fancyhead{} % Blank out the default header
 \fancyfoot{} % Blank out the default footer
 
-\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ September 2018} % Custom header text
+\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ October 2018} % Custom header text
 
 \fancyfoot[RO,LE]{\thepage} % Custom footer text
 %----------------------------------------------------------------------------------------
 %       TITLE SECTION
 %----------------------------------------------------------------------------------------
-\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 4: Extendsible Hashing}} % Article title
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 5: Linear Hashing}} % Article title
 \author{
 \large
 {\textsc{Gahan Saraiya, 18MCEC10 }}\\[2mm]
@@ -86,75 +86,59 @@
 \newcommand*\fail{\item[\XSolidBrush]}
 
 \section{Introduction}
-\paragraph{}
-Extendsible Hashing is a dynamic hash system which treats hash as bit string. It has hierarchical nature as it extends buffer as needed. Thus buckets are added dynamically.
+\paragraph{} Aim of this practical is to implementing Linear Hashing 
 
 \section{Logic}
 \begin{itemize}
-	\item Create Global bucket and initialize with single empty local bucket
-	\item Add item in bucket
-	\item To add item Least Significant bits (LSB) are considered to avoid overhead of recalculating padding MSB (most significant bit)
-	\item until bucket overflows it can accommodate data
-	\item When bucket is full global bucket capacity is to be increased by factor of two and overflowed local buckets are to be spitted
+	\item 
 \end{itemize}
 
 \section{Implementation}
 The code is implemented in Python as below
 
-\inputminted[frame=lines, breaklines, linenos]{python}{extendsibleHashing.py}
+\inputminted[frame=lines, breaklines, linenos]{python}{../linear_hashing.py}
 
 \section*{Output 1}
-\inputminted[frame=lines, breaklines]{text}{output1.txt}
-
-\section*{Output 2}
-\inputminted[frame=lines, breaklines]{text}{output2.txt}
-
-\section*{Output 3}
-\inputminted[frame=lines, breaklines]{text}{output3.txt}
+% \inputminted[frame=lines, breaklines]{text}{output1.txt}
 
 \section{Summary}
 \begin{itemize}
-	\tick If directory fits in memory then point query requires only $ 1 $ disk access
-	\tick Empty buckets can be merge with it's split image when directory becomes half of size
-	\tick Hash Performance doesn't degrade with growth of file
-	\fail need to maintain local and global depth
-	\fail Extra level of indirection to find desired record
-	\fail Even if directory size doubles only on demand/overflow in worst case it may be possible that directory is getting overflow with similar matching bits in which the data stored in it are utilized about fifty percent only (even if buckets are less multiple pointers are pointing to same bucket).
+	\item
 \end{itemize}
 
-\setlength{\tabcolsep}{10pt} % Default value: 6pt
-\renewcommand{\arraystretch}{1.5} % Default value: 1
-\begin{table}[!ht]
-\begin{flushleft}
-\centering
-\caption*{Time Complexity of Extendible Hashing for single record access}
-\begin{tabular}{ l  c c }
-
-\hline
-{} &\multicolumn{2}{ c }{\textbf{Condition}}\\ 
-\cline{1-3}
-\textbf{} & \textbf{directory size < memory size} & \textbf{directory size > memory size} \\
-\hline
-Access & 1 & 2 \\ 
- \hline
-\end{tabular}
-\end{flushleft}
-\end{table}
-
-
-\subsection*{Space Complexity}
-\begin{table}[H]
-	\begin{tabular}{r l}
-		R & Number of records \\
-		B & Block Size \\
-		N & Number of blocks \\
-	\end{tabular}
-\end{table}
-\paragraph{Space Utilization}
-\begin{equation}
-	\frac{R}{B \times N}
-\end{equation}
-\paragraph{Average Utilization} $\ln{2} \approx 0.69$
+%\setlength{\tabcolsep}{10pt} % Default value: 6pt
+%\renewcommand{\arraystretch}{1.5} % Default value: 1
+%\begin{table}[!ht]
+%\begin{flushleft}
+%\centering
+%\caption*{Time Complexity of Extendible Hashing for single record access}
+%\begin{tabular}{ l  c c }
+%
+%\hline
+%{} &\multicolumn{2}{ c }{\textbf{Condition}}\\ 
+%\cline{1-3}
+%\textbf{} & \textbf{directory size < memory size} & \textbf{directory size > memory size} \\
+%\hline
+%Access & 1 & 2 \\ 
+% \hline
+%\end{tabular}
+%\end{flushleft}
+%\end{table}
+%
+%
+%\subsection*{Space Complexity}
+%\begin{table}[H]
+%	\begin{tabular}{r l}
+%		R & Number of records \\
+%		B & Block Size \\
+%		N & Number of blocks \\
+%	\end{tabular}
+%\end{table}
+%\paragraph{Space Utilization}
+%\begin{equation}
+%	\frac{R}{B \times N}
+%\end{equation}
+%\paragraph{Average Utilization} $\ln{2} \approx 0.69$
 %----------------------------------------------------------------------------------------
 %\end{multicols}
 \end{document}
