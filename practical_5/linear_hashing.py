@@ -29,7 +29,7 @@ class LinearHashing(object):
 
     @property
     def threshold_outbound(self):
-        return (self.total_data / self.buffer_capacity) > self.threshold
+        return ((self.total_data + 1) / self.buffer_capacity) > self.threshold
 
     def hash_function(self, value, flag=0):
         """
@@ -40,7 +40,7 @@ class LinearHashing(object):
         """
         if not flag:
             # if no splitting require
-            return value % (self.data_capacity_per_bucket ** self.current_phase)
+            return value % (2 ** self.previous_phase)
         else:
             # if splitting require
             return value % (2 ** (self.current_phase + 1))
