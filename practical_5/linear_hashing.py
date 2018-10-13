@@ -84,42 +84,70 @@ class LinearHashing(object):
         self.total_data += 1
 
         if print_status:
-            data_dict = OrderedDict()
-            data_dict["Sr No."] = self.total_data
-            data_dict["Element"] = value
-            data_dict["SplitIndex"] = self.index_counter
-            data_dict["Phase"] = self.current_phase
-            data_dict["Ratio"] = round(self.total_data / buffer_capacity_beefore_insert, 2)
-            data_dict["Threshold"] = self.threshold
-            # data_dict["Previous Phase"] = self.previous_phase
-            if not self.has_title:
-                print("\t".join(data_dict.keys()) + "\t" + "RESULT")
-                self.has_title = True
-            print("\t".join("{:^{}s}".format(str(v), len(k)) for k, v in data_dict.items()), end="\t")
-            print(self.buffer)
-
+            self.pretty_print(value, buffer_capacity_beefore_insert)
         return True
+
+    def pretty_print(self, value, buffer_capacity_beefore_insert):
+        data_dict = OrderedDict()
+        data_dict["Sr No."] = self.total_data
+        data_dict["Element"] = value
+        data_dict["SplitIndex"] = self.index_counter
+        data_dict["Phase"] = self.current_phase
+        data_dict["Ratio"] = round(self.total_data / buffer_capacity_beefore_insert, 2)
+        data_dict["Threshold"] = self.threshold
+        # data_dict["Previous Phase"] = self.previous_phase
+        if not self.has_title:
+            print(" ".join(data_dict.keys()) + " " + "RESULT")
+            self.has_title = True
+        print(" ".join("{:^{}s}".format(str(v), len(k)) for k, v in data_dict.items()), end=" ")
+        print(self.buffer)
 
     def delete(self):
         return NotImplementedError
 
     def __repr__(self):
-        return "\n".join("{} -> {}".format(k, v) for k, v in self.buffer.items())
+        return "\n".join(
+            "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket 
+            else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
+            for i in sorted(self.buffer))
 
     def __str__(self):
-        return "\n".join("{} -> {}".format(k, v) for k, v in self.buffer.items())
+        return "\n".join(
+            "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket 
+            else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
+            for i in sorted(self.buffer))
 
-
-if __name__ == "__main__":
-    capacity = 3
+def test(flag=None):
+    """
+    test fuction to test functionality of program
+    """
+    if not flag:
+        capacity = 3
+    elif len(flag) == 2:
+        capacity = int(flag[1])
+    elif len(flag) > 2:
+        capacity, total_elements = map(int, flag[1:3])
+        print("Capacity per bucket (without chaining): {}".format(capacity))
+        hash_bucket = LinearHashing(data_capacity_per_bucket=capacity, threshold=0.7)
+        
+        import random
+        input_lis = list(random.randint(0, 500) for i in range(total_elements))
+        for i in input_lis:
+            hash_bucket.insert(i, print_status=1)
     print("Capacity per bucket (without chaining): {}".format(capacity))
     hash_bucket = LinearHashing(data_capacity_per_bucket=capacity, threshold=0.7)
     input_lis = [3, 2, 4, 1, 8, 14, 5, 10, 7, 24, 17, 13, 15]
     for i in input_lis:
-        # print("STATUS:-------")
-        # print(">>>>> ", l.buffer)
-        # print("\n{2}\n{3} Inserting: {0:-3d} (Iteration :{1}) {3}".format(i, hash_bucket.total_data + 1, "#"*50, "#"*5))
-        result = hash_bucket.insert(i, print_status=1)
-        # if result:
-        #     print("Value {} inserted successfully.\n{}".format(i, "#"*50))
+        hash_bucket.insert(i, print_status=1)
+
+
+    print("Final Bucket Status")
     print(hash_bucket)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        test(sys.argv)
+    else:
+        test(0)

@@ -75,35 +75,101 @@
 %----------------------------------------------------------------------------------------
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fourier} 
+\usepackage{array}
+\usepackage{makecell}
 
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+\newcommand*\tick{\item[\Checkmark]}
+\newcommand*\arrow{\item[$\Rightarrow$]}
+\newcommand*\fail{\item[\XSolidBrush]}
 \usepackage{minted} % for highlighting code sytax
+
 \begin{document}
 \maketitle % Insert title
 \thispagestyle{fancy} % All pages have headers and footers
 
-\newcommand*\tick{\item[\Checkmark]}
-\newcommand*\arrow{\item[$\Rightarrow$]}
-\newcommand*\fail{\item[\XSolidBrush]}
 
 \section{Introduction}
-\paragraph{} Aim of this practical is to implementing Linear Hashing 
+\paragraph{} Aim of this practical is to implementing Linear Hashing.
+	\begin{itemize}
+		\item linear growth of bucket array
+		\item dynamic decision to increase bucket size
+		\item bucket split criteria - $average\ bucket\ occupancy > threshold$ 
+	\end{itemize}
 
 \section{Logic}
-\begin{itemize}
-	\item 
-\end{itemize}
+\begin{enumerate}
+	\item Initialize 
+		\begin{itemize}
+			\item bucket array with 2 buckets initially
+			\item phase to 1
+			\item threshold to 70\%
+			\item hash function $h(element, without\_splitting) = element\ \% \ 2^{phase\_number}$
+			\item hash function $h(element, during\_splitting) = element\ \% \ 2^{phase\_number+1}$
+		\end{itemize}
+	\item For each Insertion check for Average occupancy and decide whether split require or not.
+	\item can insert node directly into bucket if no splitting is require (when average occupancy < threshold) but might need chaining
+	\item otherwise splitting to be done from index 0 (first bucket)
+\end{enumerate}
 
 \section{Implementation}
 The code is implemented in Python as below
 
 \inputminted[frame=lines, breaklines, linenos]{python}{../linear_hashing.py}
 
-\section*{Output 1}
-% \inputminted[frame=lines, breaklines]{text}{output1.txt}
+\subsubsection{Output}
+\inputminted[frame=lines, breaklines]{text}{../output_cap2.txt}
+
+
+\subsubsection{Output}
+\inputminted[frame=lines, breaklines]{text}{../output_cap3.txt}
+
+\subsubsection{Output}
+\inputminted[frame=lines, breaklines]{text}{../output_cap10.txt}
 
 \section{Summary}
+
+\subsection*{\textbf{Comparison with Extendible Hashing}}
+\begin{table}[H]
+	\begin{tabular}{r l}
+		$N$ & Number of records \\
+		$B$ & Number of buckets\\
+		$b$ & bucket capacity \\
+		$s$ & Number of successful searches \\
+		$u$ & Number of unsuccessful searches \\
+		$b_{s}$ & 1 + number of buckets accessed for successful search \\
+		$b_{u}$ & 1 + number of buckets accessed for unsuccessful search \\
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]
+	\bgroup
+	\def\arraystretch{2}%  1 is the default, change whatever you need
+	\begin{tabular}{c | c | c}
+		\thead{Factor} & \thead{Linear Hashing} & \thead{Extendible Hashing}\\
+		\hline
+		Storage utilization & \makecell{$\frac{N}{B \times b}$} & \makecell{$\frac{N}{B \times b}$} \\
+		\makecell{Average unsuccessful \\search cost} & \makecell{$\frac{b_u}{u}$} & \makecell{$\frac{b_u}{u}$} \\
+		\makecell{Average unsuccessful \\search cost} & \makecell{$\frac{b_s}{s}$} & \makecell{$\frac{b_s}{s}$} \\
+		\makecell{Split(expansion) \\Cost} & \makecell{1 access to read primary buckets \\ + k accesses to read k overflow buckets \\ + 1 access to write old bucket \\ + extra accesses to write \\the overflow
+		buckets \\attached to old and new buckets} & \makecell{1 access to write old bucket \\ + 1 access to write new bucket \\+ extra access to write the overflow buckets \\ attached to old and new buckets \\ + accesses needed to update \\the directory pointers if the directory \\resides on the secondary storage} \\
+		Insertion Cost & Unsuccessful search cost + Split cost & Unsuccessful search cost + Split cost \\
+	\end{tabular}
+	\egroup
+\end{table}
+
+\subsubsection*{Conclusion}
 \begin{itemize}
-	\item
+	\item instead of exponential growth as in extendible hashing it's directory structure grows linearly
+	\tick more efficient in terms of space utilization compared to extendible hashing
+	\tick hash function calculated dynamically
+	\fail for skew or non uniform data overflow chaining might be bottleneck in terms of search complexity as it may needs linear search for many records
+	\fail overhead of computing threshold and splitting node if require on each \textbf{insert} operation
 \end{itemize}
 
 %\setlength{\tabcolsep}{10pt} % Default value: 6pt
