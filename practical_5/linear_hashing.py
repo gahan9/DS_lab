@@ -7,6 +7,7 @@ StackOverflow: https://stackoverflow.com/users/story/7664524
 
 Implementation of linear hashing
 """
+from collections import OrderedDict
 from math import log2, log
 
 
@@ -18,6 +19,7 @@ class LinearHashing(object):
         self.buffer = {key: [] for key in range(2)}  # initial buffer
         self.index_counter = 0  # keep index counter from where we are supposed to start split in phase
         self.previous_phase = 1  # keeping phase number to reset index counter
+        self.has_title = None
 
     @property
     def current_phase(self):
@@ -62,7 +64,7 @@ class LinearHashing(object):
         :return:
         """
         self.set_index_counter_if()
-
+        buffer_capacity_beefore_insert = self.buffer_capacity
         if self.threshold_outbound:
             # buffer to be extend
             self.buffer[len(self.buffer)] = []
@@ -82,13 +84,19 @@ class LinearHashing(object):
         self.total_data += 1
 
         if print_status:
+            data_dict = OrderedDict()
+            data_dict["Sr No."] = self.total_data
+            data_dict["Element"] = value
+            data_dict["SplitIndex"] = self.index_counter
+            data_dict["Phase"] = self.current_phase
+            data_dict["Ratio"] = round(self.total_data / buffer_capacity_beefore_insert, 2)
+            data_dict["Threshold"] = self.threshold
+            # data_dict["Previous Phase"] = self.previous_phase
+            if not self.has_title:
+                print("\t".join(data_dict.keys()) + "\t" + "RESULT")
+                self.has_title = True
+            print("\t".join("{:^{}s}".format(str(v), len(k)) for k, v in data_dict.items()), end="\t")
             print(self.buffer)
-            data_dict = {
-                "INDEX": self.index_counter,
-                "CURRENT PHASE": self.current_phase,
-                "PREVIOUS PHASE": self.previous_phase
-            }
-            print("\t".join(data_dict.keys()))
 
         return True
 
@@ -108,8 +116,8 @@ if __name__ == "__main__":
     for i in input_lis:
         # print("STATUS:-------")
         # print(">>>>> ", l.buffer)
-        print("\n{2}\n{3} Inserting: {0:-3d} (Iteration :{1}) {3}".format(i, hash_bucket.total_data + 1, "#"*50, "#"*5))
+        # print("\n{2}\n{3} Inserting: {0:-3d} (Iteration :{1}) {3}".format(i, hash_bucket.total_data + 1, "#"*50, "#"*5))
         result = hash_bucket.insert(i, print_status=1)
-        if result:
-            print("Value {} inserted successfully.\n{}".format(i, "#"*50))
+        # if result:
+        #     print("Value {} inserted successfully.\n{}".format(i, "#"*50))
     print(hash_bucket)
