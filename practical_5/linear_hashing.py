@@ -83,7 +83,13 @@ class LinearHashing(object):
 
         if print_status:
             print(self.buffer)
-            print("INDEX: {}\nCURRENT PHASE: {} \t PREVIOUS PHASE: {}".format(self.index_counter, self.current_phase, self.previous_phase))
+            data_dict = {
+                "INDEX": self.index_counter,
+                "CURRENT PHASE": self.current_phase,
+                "PREVIOUS PHASE": self.previous_phase
+            }
+            print("\t".join(data_dict.keys()))
+
         return True
 
     def delete(self):
@@ -102,7 +108,7 @@ if __name__ == "__main__":
     for i in input_lis:
         # print("STATUS:-------")
         # print(">>>>> ", l.buffer)
-        print("{2}\n{1} Inserting: {0:-3d} {1}".format(i, "#"*5, "#"*50))
+        print("\n{2}\n{3} Inserting: {0:-3d} (Iteration :{1}) {3}".format(i, hash_bucket.total_data + 1, "#"*50, "#"*5))
         result = hash_bucket.insert(i, print_status=1)
         if result:
             print("Value {} inserted successfully.\n{}".format(i, "#"*50))
