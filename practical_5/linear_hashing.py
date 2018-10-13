@@ -111,7 +111,9 @@ class LinearHashing(object):
 
 
 if __name__ == "__main__":
-    hash_bucket = LinearHashing(data_capacity_per_bucket=3, threshold=0.7)
+    capacity = 3
+    print("Capacity per bucket (without chaining): {}".format(capacity))
+    hash_bucket = LinearHashing(data_capacity_per_bucket=capacity, threshold=0.7)
     input_lis = [3, 2, 4, 1, 8, 14, 5, 10, 7, 24, 17, 13, 15]
     for i in input_lis:
         # print("STATUS:-------")
