@@ -64,7 +64,7 @@ class LinearHashing(object):
         :return:
         """
         self.set_index_counter_if()
-        buffer_capacity_beefore_insert = self.buffer_capacity
+        buffer_capacity_before_insert = self.buffer_capacity
         if self.threshold_outbound:
             # buffer to be extend
             self.buffer[len(self.buffer)] = []
@@ -84,7 +84,7 @@ class LinearHashing(object):
         self.total_data += 1
 
         if print_status:
-            self.pretty_print(value, buffer_capacity_beefore_insert)
+            self.pretty_print(value, buffer_capacity_before_insert)
         return True
 
     def pretty_print(self, value, buffer_capacity_beefore_insert):
@@ -107,15 +107,16 @@ class LinearHashing(object):
 
     def __repr__(self):
         return "\n".join(
-            "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket 
-            else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
-            for i in sorted(self.buffer))
+                "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket
+                else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
+                for i in sorted(self.buffer))
 
     def __str__(self):
         return "\n".join(
-            "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket 
-            else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
-            for i in sorted(self.buffer))
+                "{:>03d} -> {}".format(i, self.buffer[i]) if len(self.buffer[i]) <= self.data_capacity_per_bucket
+                else "{:>03d} -> {} => {}".format(i, self.buffer[i][:self.data_capacity_per_bucket], self.buffer[i][self.data_capacity_per_bucket:])
+                for i in sorted(self.buffer))
+
 
 def test(flag=None):
     """
@@ -129,7 +130,7 @@ def test(flag=None):
         capacity, total_elements = map(int, flag[1:3])
         print("Capacity per bucket (without chaining): {}".format(capacity))
         hash_bucket = LinearHashing(data_capacity_per_bucket=capacity, threshold=0.7)
-        
+
         import random
         input_lis = list(random.randint(0, 500) for i in range(total_elements))
         for i in input_lis:
@@ -140,14 +141,14 @@ def test(flag=None):
     for i in input_lis:
         hash_bucket.insert(i, print_status=1)
 
-
     print("Final Bucket Status")
     print(hash_bucket)
 
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         test(sys.argv)
     else:
-        test(0)
+        test()
