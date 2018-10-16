@@ -55,7 +55,7 @@
 %----------------------------------------------------------------------------------------
 %       TITLE SECTION
 %----------------------------------------------------------------------------------------
-\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 5: Linear Hashing}} % Article title
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 6: Iterator for Selection and Projection}} % Article title
 \author{
 \large
 {\textsc{Gahan Saraiya, 18MCEC10 }}\\[2mm]
@@ -97,33 +97,40 @@
 \section{Introduction}
 \paragraph{} Aim of this practical is to iterator for selection and join operation.
 
-\section{Prerequisite setup}
+\section{Logic}
+
+\subsection*{Prerequisite setup}
 \begin{itemize}
 	\item Created a data file and added dummy in it
 \end{itemize}
 
-\section{Logic}
-\begin{enumerate}
-	\item Open data file
-	\item get attribute, value and condition from user
-	\item also optional parameter can be passed for case sensitive match
-	\item start evaluating condition
-	\item display result satisfying condition
-	\item display summary of program
-\end{enumerate}
+\begin{itemize}
+	\arrow Open data file
+	\arrow get attribute, value and condition from user \footnote{here just a function call/test case used}
+	\arrow also optional parameter can be passed for case sensitive match
+	\arrow start evaluating condition
+	\arrow display result satisfying condition
+	\arrow display summary of program
+	\arrow To implement program projection is considered as selection with no condition.
+\end{itemize}
 
 \section{Implementation}
 The code is implemented in Python as below
 
-\inputminted[frame=lines, breaklines, linenos]{python}{../iterator.py}
+\inputminted[frame=lines, breaklines, linenos, fontsize=\small]{python}{../iterator.py}
 
 \subsubsection{Output}
-\inputminted[frame=lines, breaklines]{text}{../output.txt}
+\inputminted[frame=lines, breaklines, fontsize=\tiny]{text}{../output.txt}
 
 
 \section{Summary}
 \begin{itemize}
-	\item 
+	\item Iterator is used to iterate over all data from file storage.
+	\item For projection program won't use any condition to filter out data and displays all the data which exists in data file.
+	\item For select operation conditions are to be matched as case insensitive (default implementation) and supports case sensitive operation if optional parameter passed to function.
+	\item Program also contains function of creating dummy data as much as needed.
+	\item Easier to use for small scale system without any overhead of setup and configuration.
+	\item Program is made modular so that it's functionality can be further updated vary easily for large scale.
 \end{itemize}
 
 \end{document}
