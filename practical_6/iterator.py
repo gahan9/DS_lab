@@ -88,7 +88,7 @@ class Iterator(object):
         :return:
         prints matched data and summary
         """
-        query = "SELECT * from {}".format(self.file_path)
+        query = "{0}\n{0}\nSELECT * from {1}".format("#"*50, self.file_path)
         where_clause = " WHERE {} {} {}".format(attributes[0], condition, values[0])
         query = query + where_clause if condition != "all" else query
         print(query)
@@ -140,7 +140,8 @@ class Iterator(object):
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    # table.select(attributes=["name"], values=["William Jensen"], condition="==", case_sensitive=False)
-    table.select(attributes=["gender"], values=["M"], condition="==", case_sensitive=False)
-    # table.select(attributes=["name"], values=["William"], condition="in", case_sensitive=False)
-    # table.select(attributes=["ssn"], values=["441-31-5305"], condition="in", case_sensitive=False)
+    table.select(attributes=["name"], values=["William Jensen"], condition="==", case_sensitive=False)
+    # table.select(attributes=["gender"], values=["M"], condition="==", case_sensitive=False)
+    table.select(attributes=["name"], values=["William"], condition="in", case_sensitive=True)
+    table.select(attributes=["ssn"], values=["441-31-5305"], condition="==", case_sensitive=False)
+    table.select(attributes=["ssn"], values=["-511"], condition="in", case_sensitive=False)
