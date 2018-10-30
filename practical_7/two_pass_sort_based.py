@@ -8,6 +8,7 @@ StackOverflow: https://stackoverflow.com/users/story/7664524
 Implementation of sorting based two pass algorithm
 """
 import os
+import math
 
 from faker import Faker
 
@@ -31,22 +32,37 @@ class Iterator(object):
         """
         self.attributes = attribute_tuple
         self.file_path = file_path
+        self.write_back_path = kwargs.get("write_back_path", "temp.write")
         self.separator = "\t"
         self.records_per_block = kwargs.get("records_per_block", 50)
         self.initialize_file()
 
     @property
-    def get_free_memory(self):
+    def free_memory(self):
         # calculate how many blocks can be accommodated in memory buffer
         num_lines = sum(1 for line in open(self.file_path))
         no_of_records = num_lines - 2  # remove header line and last new line
-        return
+        return 101  # for now return available memory staticaly for basic implementation
 
     @property
-    def get_total_blocks(self):
+    def total_blocks(self):
         # calculate total number of blocks by record size
-        os.popen("wc")
-        return
+        return math.ceil(self.get_total_records / self.records_per_block)
+
+    @property
+    def total_records(self):
+        # calculate total number of blocks by record size
+        num_lines = sum(1 for line in open(self.file_path))
+        no_of_records = num_lines - 2  # remove header line and last empty line
+        return no_of_records
+
+    @property
+    def can_be_one_pass(self):
+        return True if self.total_blocks < self.free_memory else False
+
+    @property
+    def can_be_two_pass(self):
+        return True if self.free_memory > math.ceil(math.sqrt(self.total_blocks)) else False
 
     def initialize_file(self):
         # check if file exits or not
@@ -118,9 +134,9 @@ class Iterator(object):
                 total_results += 1
                 print(record)
             elif record:
-                record_lis = record.split("\t")
+                record_lis = record.split(self.separator)
                 attribute, value = attributes[0], values[0]
-                record_val = record_lis[header.split("\t").index(attribute)]
+                record_val = record_lis[header.split(self.separator).index(attribute)]
                 # print(record_val, value, condition)
                 if condition.lower() in ("==", "equal", "equals", "equals to"):
                     if self._match(value, "==", record_val, case_sensitive):
@@ -151,13 +167,35 @@ class Iterator(object):
         print("Total Results: {}".format(total_results))
         print("Total Records: {}".format(total_records))
 
+    def get_distinct(self, attribute=None):
+        sort_key = attribute if "attribute" else "ssn"
+        if self.can_be_one_pass:
+            # use in memory algorithm to calculate distinct
+            pass
+        elif self.can_be_two_pass:
+            # apply 2 pass algorithm to sort and use operation on database
+
+            # read blocks one by one
+
+            # write sorted block/sublist
+
+            # read sublist from each block and output desire result
+            pass
+        else:
+            # can not proceed all given blocks with memory constraint
+            pass
+
+def test_selection():
+    table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
+                     file_path="iterator.dbf")
+    # table.add_dummy_data(1000)
+    table.select(attributes=["name"], values=["William Jensen"], condition="==", case_sensitive=False)
+    # table.select(attributes=["gender"], values=["M"], condition="==", case_sensitive=False)
+    table.select(attributes=["name"], values=["William"], condition="in", case_sensitive=True)
+    table.select(attributes=["ssn"], values=["441-31-5305"], condition="==", case_sensitive=False)
+    table.select(attributes=["ssn"], values=["-511"], condition="in", case_sensitive=False)
+
 
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    table.add_dummy_data(1000)
-    # table.select(attributes=["name"], values=["William Jensen"], condition="==", case_sensitive=False)
-    # table.select(attributes=["gender"], values=["M"], condition="==", case_sensitive=False)
-    # table.select(attributes=["name"], values=["William"], condition="in", case_sensitive=True)
-    # table.select(attributes=["ssn"], values=["441-31-5305"], condition="==", case_sensitive=False)
-    # table.select(attributes=["ssn"], values=["-511"], condition="in", case_sensitive=False)
