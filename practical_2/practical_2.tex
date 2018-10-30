@@ -72,6 +72,9 @@
 	pdfcreator={Gahan Saraiya},
 	pdfproducer={Gahan Saraiya},
 }
+
+\usepackage{makecell}
+
 %----------------------------------------------------------------------------------------
 \begin{document}
 \maketitle % Insert title
@@ -134,6 +137,79 @@ To achieve that we need to have optimal storage mechanism/schemes that allows to
 		\tick Optimizes communication/transfer between Main memory and CPU cache memory (Increases Hit Ratio)
 		\tick Optimal solution for both full and partial record access
 	\end{itemize}
+
+\section{Modern techniques of data storage}
+Modern Data Storage techniques can be classified in below categories:
+\begin{enumerate}
+	\item Column-oriented DBMS
+		\subitem stores data tables by column rather than by row
+	\item Key-value pair
+	\item Document oriented
+	\item NoSQL (Not Only SQL database)
+		\subitem not required to follow an established relational schema
+	\item Graph Based
+\end{enumerate}
+
+\begin{figure}[H]
+	\bgroup
+	\setlength{\parindent}{-5em}
+	\includegraphics[width=550px]{refs/data_management-nosql.jpg}
+	\egroup
+	\caption{NoSQL family}
+\end{figure}
+
+%\begin{table}[H]
+%	\bgroup
+%	\setlength{\parindent}{-6em}
+%	\def\arraystretch{2}%  1 is the default, change whatever you need
+%	\begin{tabular}{c | c | c | c | c}
+%		\thead{} 
+%		& \thead{\large Document Oriented} 
+%		& \thead{\large Graph based} 
+%		& \thead{\large Key-Value Databases} 
+%		& \thead{\large Column Oriented} 
+%		\\ \hline \hline
+%		Examples 
+%		& \makecell{stores data elements in 
+%			\\ document-like structures that 
+%			\\ encode information in format 
+%			\\ such as JSON} 
+%		& \makecell{Emphasize connections 
+%			\\ between data elements,
+%			\\ storing related nodes in
+%			\\ graphs to accelerate querying} 
+%		& \makecell{Simple data model that pairs
+%			\\ a unique key and its
+%			\\ associated value in storing
+%			\\ data elements} 
+%		& \makecell{} \\
+%	\end{tabular}
+%	\egroup
+%\end{table}
+
+\subsection{Column-oriented DBMS}
+	\paragraph{} stores data tables by column rather than by row.
+	\begin{itemize}
+		\item serializes all of the values of a column together
+		\tick well suited for sparse data sets
+		\fail retrieve all the data for a given record (entire row) requires more disk operations to collect data from multiple columns
+	\end{itemize}
+\subsection{Graph based}
+	\begin{itemize}
+		\tick easy to model and store relationship
+		\tick performance of relationship traversal remains constant with growth in data size
+		\tick queries are shortened and more readable
+		\tick adding additional properties and relationship can be done on the fly - no migrations
+	\end{itemize}
+	
+	\begin{figure}[H]
+		\bgroup
+		\setlength{\parindent}{-5em}
+		\includegraphics[width=550px]{refs/relational_graph_model.jpg}
+		\egroup
+		\caption{Graph – Alice and 3 Departments as nodes}
+	\end{figure}
+
 
 \section{Summary}
 
