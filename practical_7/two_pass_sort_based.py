@@ -185,7 +185,7 @@ class Iterator(object):
         file.close()
         return self.summary(total_results, total_records)
 
-    def get_distinct(self, attribute=None):
+    def get_distinct(self, attribute=None, only_summary=True):
         sort_key = attribute if attribute else "ssn"
         _result_set = []
         if self.can_be_one_pass:
@@ -199,12 +199,12 @@ class Iterator(object):
             # apply 2 pass algorithm to sort and use operation on database
             print("Processing Two Pass Algorithm")
             f = open(self.file_path, "r")
-            writer = open("write.dbf", "w")
+            writer = open(self.write_back_path, "w")
             header = f.readline()
             writer.write(header)
             _idx = header.split(self.separator).index(sort_key)
             while True:
-                # READ
+                # read blocks one by one
                 block_records = list(islice(f, self.free_memory - 1))
                 if not block_records:
                     break
@@ -213,9 +213,23 @@ class Iterator(object):
                     sorted_sublist = sorted(block_records, key=lambda x: x.split(self.separator)[_idx])
                     writer.writelines(sorted_sublist)
                 # write sorted block/sublist data back to disk(secondary memory)
-            # read blocks one by one
+            f.close()
+            writer.close()
             # read sublist from each block and output desire result
-            pass
+            last_read = ""
+            total_results = 0
+            # for line in open(self.write_back_path, "r"):
+            file = open(self.write_back_path, "r")
+            for index, line in enumerate(file.readlines()):
+                for i in range(self.free_memory - 1):
+                    pass
+                current_record = line.split(self.separator)[_idx]
+                if current_record and current_record != last_read:
+                    if not only_summary:
+                        print(current_record)
+                    last_read = current_record
+                    total_results += 1
+            self.summary(total_results-2, self.total_records)
         else:
             # can not proceed all given blocks with memory constraint
             print("Require more than two pass to handle this large data")
@@ -236,4 +250,7 @@ def test_selection():
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    table.get_distinct()
+    # table.get_distinct("name", only_summary=True)
+    # table.get_distinct("job", only_summary=True)
+    # table.get_distinct("ssn", only_summary=True)
+    table.get_distinct("gender", only_summary=True)
