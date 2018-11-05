@@ -152,6 +152,10 @@ The code is implemented in Python as below
 
 
 \section{Summary}
+One pass algorithm can only work if whole block of relation can fit in to main memory otherwise we require more than one pass to determine correct result such as \textbf{Two-Pass Multiway Merge Sort (TPMMS) Algorithm} as implemented here for unary operator - distinct ($\delta$).
+
+For Two pass algorithm we need to fetch all blocks and then write the individually sorted blocks and again we need to read all blocks to perform query operation hence this algorithm can only work if below requirements are satisfied.
+
 \subsection{Requirements of Two Pass}
 
 \begin{itemize}
@@ -162,5 +166,6 @@ The code is implemented in Python as below
 \begin{itemize}
 	\item $Max\ File\ Size\ \leq\ (Available\ Memory\ Buffer)\times(Available\ Memory\ Buffer\ -\ 1)$
 \end{itemize}
+
 
 \end{document}
