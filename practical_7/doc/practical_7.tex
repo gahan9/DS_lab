@@ -14,6 +14,7 @@
 \usepackage[english]{babel} % English language/hyphenation
 \usepackage{amsmath,amsfonts,amsthm} % Math packages
 \usepackage[utf8]{inputenc}
+\usepackage{xcolor}
 \usepackage{float}
 \usepackage{lipsum} % Package to generate dummy text throughout this template
 \usepackage{blindtext}
@@ -88,6 +89,24 @@
 \newcommand*\arrow{\item[$\Rightarrow$]}
 \newcommand*\fail{\item[\XSolidBrush]}
 \usepackage{minted} % for highlighting code sytax
+\definecolor{LightGray}{gray}{0.9}
+
+\setminted[text]{
+	frame=lines, 
+	breaklines,
+	baselinestretch=1.2,
+	bgcolor=LightGray,
+%	fontsize=\small
+}
+
+\setminted[python]{
+	frame=lines, 
+	breaklines, 
+	linenos,
+	baselinestretch=1.2,
+%	bgcolor=LightGray,
+%	fontsize=\small
+}
 
 \begin{document}
 \maketitle % Insert title
@@ -95,27 +114,53 @@
 
 
 \section{Introduction}
-\paragraph{} Aim of this practical is to implement sort based two pass algorithm.
+\paragraph{} Aim of this practical is to implement sort based two pass algorithm to find distinct values.
 
 \section{Logic}
-\paragraph{Prerequisite setup} Created a data file and added dummy in it
+\paragraph{Prerequisite setup:} Created a data file and added dummy in it
+\subsection{Pass 1}
+	\begin{enumerate}
+		\item Get $Available\ Memory\ Buffer(M)$
+		\item Determine file size and decide whether file can be read in one pass or two pass or more
+		\item For this experiment we'll focus on implementing two pass algorithm to evaluate distinct values
+		\item Divide file in to chunks of block
+		\item sort this chucks(sublist) individually with any in memory sorting algorithm
+		\item Write these sorted chunks(sublist) to disk
+	\end{enumerate}
 
-\begin{itemize}
-	\arrow Open data file
-\end{itemize}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=350px]{assets/pass1.jpg}
+	\end{figure}
+
+\subsection{Pass 2}
+	\begin{enumerate}
+		\item We (re)-use the M buffers to merge the first $(Available\ Memory\ Buffer\ -\ 1)$ chucks into a chunk of size $(Available\ Memory\ Buffer)\times(Available\ Memory\ Buffer\ -\ 1)$ blocks
+		\item\label{recurse} Iterate over every first element of chunks and pick least value
+		\item Output if it is not same as previously picked element
+		\item Repeat from Step \ref{recurse} until all the elements in all chunks are evaluated
+	\end{enumerate}
+
 
 \section{Implementation}
 The code is implemented in Python as below
 
-\inputminted[frame=lines, breaklines, linenos, fontsize=\small]{python}{../two_pass_sort_based.py}
+\inputminted{python}{../two_pass_sort_based.py}
 
-\subsubsection{Output}
-%\inputminted[frame=lines, breaklines, fontsize=\tiny]{text}{../output.txt}
+\subsection{Output}
+\inputminted{text}{../output.txt}
 
 
 \section{Summary}
+\subsection{Requirements of Two Pass}
+
 \begin{itemize}
-	\item
+	\item $number\ of\ chunks\ \leq\ Available\ Memory\ Buffer\ -\ 1$
+\end{itemize}
+
+\subsection{File Size Constraint}
+\begin{itemize}
+	\item $Max\ File\ Size\ \leq\ (Available\ Memory\ Buffer)\times(Available\ Memory\ Buffer\ -\ 1)$
 \end{itemize}
 
 \end{document}

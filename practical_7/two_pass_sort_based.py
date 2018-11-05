@@ -37,6 +37,10 @@ class Iterator(object):
         self.separator = "\t"
         self.records_per_block = kwargs.get("records_per_block", 30)
         self.initialize_file()
+        print("Consideration:\n"
+              "Records per block: {}\n"
+              "Total Records per block: {}\n".format(self.records_per_block, self.total_records)
+              )
 
     @staticmethod
     def read_in_chunks(file_object, chunk_size=1024):
@@ -110,7 +114,7 @@ class Iterator(object):
         return True
 
     @staticmethod
-    def split_file_inblocks(file_obj, split_size):
+    def split_file_in_blocks(file_obj, split_size):
         blocks = []
         while True:
             block_records = list(islice(file_obj, split_size))
@@ -163,7 +167,7 @@ class Iterator(object):
             # for line in open(self.write_back_path, "r"):
             file = open(self.write_back_path, "r")
             header = file.readline()
-            sorted_blocks = self.split_file_inblocks(file, self.free_memory - 1)
+            sorted_blocks = self.split_file_in_blocks(file, self.free_memory - 1)
             while sorted_blocks:
                 temp_lis = [i[0].split(self.separator)[_idx] for i in sorted_blocks if i]
                 if not temp_lis:
