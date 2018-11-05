@@ -35,7 +35,7 @@ class Iterator(object):
         self.file_path = file_path
         self.write_back_path = kwargs.get("write_back_path", "temp.write")
         self.separator = "\t"
-        self.records_per_block = kwargs.get("records_per_block", 50)
+        self.records_per_block = kwargs.get("records_per_block", 30)
         self.initialize_file()
 
     @staticmethod
@@ -69,7 +69,7 @@ class Iterator(object):
 
     @property
     def can_be_one_pass(self):
-        return False  # for testing
+        # return False  # for testing
         return True if self.total_blocks < self.free_memory else False
 
     @property
@@ -103,87 +103,11 @@ class Iterator(object):
                 file.write(data_string)
 
     @staticmethod
-    def _match(value, condition, record_val, case=False):
-        """
-        dynamic evaluation of matching value
-        :param value: value to be match
-        :param condition: condition through which values to be compared
-        :param record_val: value of record in data file
-        :param case: case sensitive? (True or False)
-        :return: boolean value if condition satisfies or not
-        """
-        # exist in...
-        if eval("""'{}' {} '{}'""".format(value.lower(), condition, record_val.lower())):
-            if case and eval("""'{}' {} '{}'""".format(value, condition, record_val)):
-                # match case sensitive
-                return True
-            elif not case:
-                # match case insensitive
-                return True
-        return False
-
-    @staticmethod
     def summary(total_results, total_records):
         print("-"*30)
         print("Total Results: {}".format(total_results))
         print("Total Records: {}".format(total_records))
         return True
-
-    def select(self, attributes=None, condition="all", values=None, case_sensitive=False):
-        """
-        dynamic selection from data file with various operations
-        :param attributes: attribute/column name
-        :param condition: condition to be compared
-        :param values: value to be matched for attribute
-        :param case_sensitive: whether match should be case sensitive or not
-        :return:
-        prints matched data and summary
-        """
-        query = "{0}\n{0}\nSELECT * from {1}".format("#"*50, self.file_path)
-        where_clause = " WHERE {} {} {}".format(attributes[0], condition, values[0])
-        query = query + where_clause if condition != "all" else query
-        print(query)
-        file = open(self.file_path, "r")
-        header = file.readline()  # skip header
-        print(header)
-        total_results = 0
-        total_records = 0
-        for record in file.read().split("\n"):
-            total_records += 1
-            if record and condition == "all":
-                total_results += 1
-                print(record)
-            elif record:
-                record_lis = record.split(self.separator)
-                attribute, value = attributes[0], values[0]
-                record_val = record_lis[header.split(self.separator).index(attribute)]
-                # print(record_val, value, condition)
-                if condition.lower() in ("==", "equal", "equals", "equals to"):
-                    if self._match(value, "==", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-                elif condition.lower() in ("in", "contains", "contain"):
-                    if self._match(value, "in", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-                elif condition.lower() in ("<", "lt"):
-                    if self._match(value, "<", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-                elif condition.lower() in (">", "gt"):
-                    if self._match(value, ">", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-                elif condition.lower() in ("<=", "lte"):
-                    if self._match(value, "<=", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-                elif condition.lower() in (">=", "gte"):
-                    if self._match(value, ">=", record_val, case_sensitive):
-                        total_results += 1
-                        print(record)
-        file.close()
-        return self.summary(total_results, total_records)
 
     def get_distinct(self, attribute=None, only_summary=True):
         sort_key = attribute if attribute else "ssn"
@@ -221,8 +145,9 @@ class Iterator(object):
             # for line in open(self.write_back_path, "r"):
             file = open(self.write_back_path, "r")
             for index, line in enumerate(file.readlines()):
-                for i in range(self.free_memory - 1):
-                    pass
+                # TODO: fix pass 2 here...
+                # for i in range(self.free_memory - 1):
+                #     pass
                 current_record = line.split(self.separator)[_idx]
                 if current_record and current_record != last_read:
                     if not only_summary:
@@ -236,21 +161,10 @@ class Iterator(object):
         return _result_set
 
 
-def test_selection():
-    table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
-                     file_path="iterator.dbf")
-    # table.add_dummy_data(1000)
-    table.select(attributes=["name"], values=["William Jensen"], condition="==", case_sensitive=False)
-    # table.select(attributes=["gender"], values=["M"], condition="==", case_sensitive=False)
-    table.select(attributes=["name"], values=["William"], condition="in", case_sensitive=True)
-    table.select(attributes=["ssn"], values=["441-31-5305"], condition="==", case_sensitive=False)
-    table.select(attributes=["ssn"], values=["-511"], condition="in", case_sensitive=False)
-
-
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
     # table.get_distinct("name", only_summary=True)
     # table.get_distinct("job", only_summary=True)
     # table.get_distinct("ssn", only_summary=True)
-    table.get_distinct("gender", only_summary=True)
+    table.get_distinct("name", only_summary=True)
