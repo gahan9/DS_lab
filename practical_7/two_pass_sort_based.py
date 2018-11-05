@@ -109,8 +109,26 @@ class Iterator(object):
         print("Total Records: {}".format(total_records))
         return True
 
-    def get_distinct(self, attribute=None, only_summary=True):
+    @staticmethod
+    def split_file_inblocks(file_obj, split_size):
+        blocks = []
+        while True:
+            block_records = list(islice(file_obj, split_size))
+            if not block_records:
+                break
+            else:
+                blocks.append(block_records)
+        return blocks
+
+    @staticmethod
+    def create_file_obj(attribute):
+        file_name = "output_distinct_on_{}.tsv".format(attribute)
+        return open(file_name, "w")
+
+    def get_distinct(self, attribute=None, only_summary=True, output_write=False):
+        output_obj = self.create_file_obj(attribute) if output_write else None
         sort_key = attribute if attribute else "ssn"
+        print("{0}\n DISTINCT ON {1}\n{0}".format('#'*50, sort_key))
         _result_set = []
         if self.can_be_one_pass:
             print("Processing One Pass Algorithm")
@@ -144,17 +162,26 @@ class Iterator(object):
             total_results = 0
             # for line in open(self.write_back_path, "r"):
             file = open(self.write_back_path, "r")
-            for index, line in enumerate(file.readlines()):
-                # TODO: fix pass 2 here...
-                # for i in range(self.free_memory - 1):
-                #     pass
-                current_record = line.split(self.separator)[_idx]
+            header = file.readline()
+            sorted_blocks = self.split_file_inblocks(file, self.free_memory - 1)
+            while sorted_blocks:
+                temp_lis = [i[0].split(self.separator)[_idx] for i in sorted_blocks if i]
+                if not temp_lis:
+                    break
+                current_record = min(temp_lis)
+                chunk_no = temp_lis.index(current_record)
+                try:
+                    del sorted_blocks[chunk_no][0]
+                except IndexError:
+                    del sorted_blocks[chunk_no]
                 if current_record and current_record != last_read:
                     if not only_summary:
                         print(current_record)
+                    if output_write:
+                        output_obj.write(current_record + "\n")
                     last_read = current_record
                     total_results += 1
-            self.summary(total_results-2, self.total_records)
+            self.summary(total_results, self.total_records)
         else:
             # can not proceed all given blocks with memory constraint
             print("Require more than two pass to handle this large data")
@@ -164,7 +191,7 @@ class Iterator(object):
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    # table.get_distinct("name", only_summary=True)
-    # table.get_distinct("job", only_summary=True)
-    # table.get_distinct("ssn", only_summary=True)
     table.get_distinct("name", only_summary=True)
+    table.get_distinct("job", only_summary=True, output_write=True)
+    table.get_distinct("ssn", only_summary=True)
+    table.get_distinct("gender", only_summary=False)
