@@ -33,6 +33,7 @@ class Iterator(object):
         """
         self.attributes = attribute_tuple
         self.file_path = file_path
+        self.write_back_folder = kwargs.get("write_back_path", "phase_one_write_back")
         self.write_back_path = kwargs.get("write_back_path", "temp.write")
         self.separator = "\t"
         self.records_per_block = kwargs.get("records_per_block", 30)
@@ -81,6 +82,8 @@ class Iterator(object):
         return True if self.free_memory > math.ceil(math.sqrt(self.total_blocks)) else False
 
     def initialize_file(self):
+        # create write back directory for phase 1
+        os.makedirs(self.write_back_folder, exist_ok=True)
         # check if file exits or not
         if os.path.exists(self.file_path):
             pass
@@ -145,39 +148,46 @@ class Iterator(object):
             # apply 2 pass algorithm to sort and use operation on database
             print("Processing Two Pass Algorithm")
             f = open(self.file_path, "r")
-            writer = open(self.write_back_path, "w")
             header = f.readline()
-            writer.write(header)
+            # writer = open(self.write_back_path, "w")
+            # writer.write(header)
             _idx = header.split(self.separator).index(sort_key)
+            file_order = 0  # finally a number contains total number of split/sublist file
             while True:
                 # read blocks one by one
                 block_records = list(islice(f, self.free_memory - 1))
                 if not block_records:
                     break
                 else:
+                    file_order += 1
                     # sort sublist by "ssn" or any other attribute
+                    writer = open(os.path.join(self.write_back_folder, "temp_00{}".format(file_order)), "w")
+                    # writer.write(header)
                     sorted_sublist = sorted(block_records, key=lambda x: x.split(self.separator)[_idx])
+                    # write sorted block/sublist data back to disk(secondary memory)
                     writer.writelines(sorted_sublist)
-                # write sorted block/sublist data back to disk(secondary memory)
+                    writer.close()
             f.close()
-            writer.close()
+
+            # PHASE 2
+
+            partition_ptr_lis = [open(os.path.join(self.write_back_folder, "temp_00{}".format(i)), "r") for i in range(1, file_order+1)]
+            phase2_data = [i.readline().split(self.separator)[_idx] for i in partition_ptr_lis]  # get first element from each sublist
             # read sublist from each block and output desire result
             last_read = ""
             total_results = 0
             # for line in open(self.write_back_path, "r"):
-            file = open(self.write_back_path, "r")
-            header = file.readline()
-            sorted_blocks = self.split_file_in_blocks(file, self.free_memory - 1)
-            while sorted_blocks:
-                temp_lis = [i[0].split(self.separator)[_idx] for i in sorted_blocks if i]
-                if not temp_lis:
-                    break
+            while any(phase2_data):
+                temp_lis = list(filter(None, phase2_data)) if None in phase2_data else phase2_data
                 current_record = min(temp_lis)
-                chunk_no = temp_lis.index(current_record)
-                try:
-                    del sorted_blocks[chunk_no][0]
-                except IndexError:
-                    del sorted_blocks[chunk_no]
+                chunk_no = phase2_data.index(current_record)
+                next_record = partition_ptr_lis[chunk_no].readline()
+                if next_record:
+                    phase2_data[chunk_no] = next_record.split(self.separator)[_idx]
+                else:
+                    # file/sublist has nothing to load/read
+                    del partition_ptr_lis[chunk_no]
+                    del phase2_data[chunk_no]
                 if current_record and current_record != last_read:
                     if not only_summary:
                         print(current_record)
@@ -195,7 +205,7 @@ class Iterator(object):
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    table.get_distinct("name", only_summary=True)
-    table.get_distinct("job", only_summary=True, output_write=True)
-    table.get_distinct("ssn", only_summary=True)
-    table.get_distinct("gender", only_summary=False)
+    # table.get_distinct("name", only_summary=True)
+    # table.get_distinct("job", only_summary=True, output_write=True)
+    # table.get_distinct("ssn", only_summary=True)
+    table.get_distinct("gender", only_summary=False, output_write=True)
