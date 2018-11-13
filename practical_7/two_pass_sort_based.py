@@ -38,9 +38,9 @@ class Iterator(object):
         self.separator = "\t"
         self.records_per_block = kwargs.get("records_per_block", 30)
         self.initialize_file()
-        print("Consideration:\n"
-              "Records per block: {}\n"
-              "Total Records per block: {}\n".format(self.records_per_block, self.total_records)
+        print("{0}\n{1}Consideration{1}\n"
+              "Records per block: {2}\n"
+              "Total Records: {3}\n{0}\n".format("#"*50, "-"*10, self.records_per_block, self.total_records)
               )
 
     @staticmethod
@@ -205,7 +205,7 @@ class Iterator(object):
 if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      file_path="iterator.dbf")
-    # table.get_distinct("name", only_summary=True)
-    # table.get_distinct("job", only_summary=True, output_write=True)
-    # table.get_distinct("ssn", only_summary=True)
+    table.get_distinct("name", only_summary=True)
+    table.get_distinct("job", only_summary=False, output_write=True)
+    table.get_distinct("ssn", only_summary=True)
     table.get_distinct("gender", only_summary=False, output_write=True)
