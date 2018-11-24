@@ -49,7 +49,7 @@
 \fancyhead{} % Blank out the default header
 \fancyfoot{} % Blank out the default footer
 
-\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ 25 September 2018} % Custom header text
+\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ November 2018} % Custom header text
 
 \fancyfoot[RO,LE]{\thepage} % Custom footer text
 %----------------------------------------------------------------------------------------
@@ -58,7 +58,7 @@
 \title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 2: Analyze impact of storage format}} % Article title
 \author{
 \large
-{\textsc{Gahan Saraiya, 18MCEC10 }}\\[2mm]
+{\textsc{Gahan Saraiya (18MCEC10), Rushi Trivedi (18MCEC08) }}\\[2mm]
 %\thanks{A thank you or further information}\\ % Your name
 \normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec10@nirmauni.ac.in}\\[2mm] % Your email address
 }
@@ -194,7 +194,32 @@ Modern Data Storage techniques can be classified in below categories:
 		\tick well suited for sparse data sets
 		\fail retrieve all the data for a given record (entire row) requires more disk operations to collect data from multiple columns
 	\end{itemize}
+	
+	\subsubsection{Cassandra}
+	Cassandra is a distributed database management system designed for handling a high volume of structured data across commodity servers. 
+	\begin{itemize}
+		\item Apache Cassandra is highly scalable, distributed and high-performance NoSQL database. 
+		\item Cassandra is designed to handle a huge amount of data.
+		\item Cassandra handles the huge amount of data with its distributed architecture.
+		\item Data is placed on different machines with more than one replication factor that provides high availability and no single point of failure.
+	\end{itemize}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=350px]{refs/cassandra.jpg}
+		\caption{Visualizing Cassandra structure}\label{cassandra}
+	\end{figure}
+	In Fig. \ref{cassandra} circles are Cassandra nodes and lines between the circles shows distributed architecture, while the client is sending data to the node.
+	
+	\subsubsection{HBase}
+	HBase is a column-oriented database management system that runs on top of Hadoop Distributed File System (HDFS). It is well suited for sparse data sets, which are common in many big data use cases. 
+
+	Unlike relational database systems, HBase does not support a structured query language like SQL; in fact, HBase isn’t a relational data store at all. HBase applications are written in Java much like a typical Apache™ MapReduce application. HBase does support writing applications in Apache™ Avro™, REST, and Thrift.
+	
+	An HBase system comprises a set of tables. Each table contains rows and columns, much like a traditional database. Each table must have an element defined as a Primary Key, and all access attempts to HBase tables must use this Primary Key.
+	Avro, as a component, supports a rich set of primitive data types including: numeric, binary data and strings; and a number of complex types including arrays, maps, enumerations and records. A sort order can also be defined for the data.
+
 \subsection{Graph based}
+	A graph database is a database designed to treat the relationships between data as equally important to the data itself. It is intended to hold data without constricting it to a pre-defined model. Instead, the data is stored like we first draw it out – showing how each individual entity connects with or is related to others.
 	\begin{itemize}
 		\item Compared to RDBMS, it eliminates keys in to relation between nodes
 		\tick easy to model and store relationship
@@ -202,6 +227,14 @@ Modern Data Storage techniques can be classified in below categories:
 		\tick queries are shortened and more readable
 		\tick adding additional properties and relationship can be done on the fly - no migrations
 	\end{itemize}
+	
+	\begin{figure}[H]
+		\bgroup
+		\setlength{\parindent}{-5em}
+		\includegraphics[width=550px]{refs/property_graph_elements}
+		\egroup
+		\caption{Building blocks of Property Graph Model}
+	\end{figure}
 	
 	\begin{figure}[H]
 		\bgroup
