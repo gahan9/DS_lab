@@ -1,0 +1,199 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% Database System
+% Practical 9: Identify  any scenario , where default query processing can be optimized for cost or performance.
+%
+% Gahan M. Saraiya
+% 18MCEC10
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------------------------
+%       PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+\documentclass[paper=letter, fontsize=12pt]{article}
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{lipsum} % Package to generate dummy text throughout this template
+\usepackage{blindtext}
+\usepackage{graphicx} 
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[sc]{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{bbding}  % to use custom itemize font
+\linespread{1.05} % Line spacing - Palatino needs more space between lines
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage{multicol} % Used for the two-column layout of the document
+%\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{float} % Required for tables and figures in the multi-column environment - they need to be placed in specific locations with the [H] (e.g. \begin{table}[H])
+\usepackage{hyperref} % For hyperlinks in the PDF
+\usepackage{lettrine} % The lettrine is the first enlarged letter at the beginning of the text
+\usepackage{paralist} % Used for the compactitem environment which makes bullet points with less space between them
+\usepackage{abstract} % Allows abstract customization
+\renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+\renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+\usepackage{titlesec} % Allows customization of titles
+
+\usepackage{makecell}
+\usepackage{longtable}
+\renewcommand\thesection{\Roman{section}} % Roman numerals for the sections
+\renewcommand\thesubsection{\Roman{subsection}} % Roman numerals for subsections
+
+\titleformat{\section}[block]{\large\scshape\centering}{\thesection.}{1em}{} % Change the look of the section titles
+\titleformat{\subsection}[block]{\large}{\thesubsection.}{1em}{} % Change the look of the section titles
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhead{} % Blank out the default header
+\fancyfoot{} % Blank out the default footer
+
+\fancyhead[C]{Institute of Technology, Nirma University $\bullet$ October 2018} % Custom header text
+
+\fancyfoot[RO,LE]{\thepage} % Custom footer text
+%----------------------------------------------------------------------------------------
+%       TITLE SECTION
+%----------------------------------------------------------------------------------------
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Practical 9: Query optimization}} % Article title
+\author{
+\large
+{\textsc{Gahan Saraiya (18MCEC10), Rushi Trivedi(18MCEC08) }}\\[2mm]
+%\thanks{A thank you or further information}\\ % Your name
+\normalsize \href{mailto:18mcec10@nirmauni.ac.in}{18mcec10@nirmauni.ac.in, 18mcec08@nirmauni.ac.in}\\[2mm] % Your email address
+}
+\date{}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan,
+	pdfauthor={Gahan Saraiya},
+	pdfcreator={Gahan Saraiya},
+	pdfproducer={Gahan Saraiya},
+}
+%----------------------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fourier} 
+\usepackage{array}
+\usepackage{makecell}
+
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+\newcommand*\tick{\item[\Checkmark]}
+\newcommand*\arrow{\item[$\Rightarrow$]}
+\newcommand*\fail{\item[\XSolidBrush]}
+\usepackage{minted} % for highlighting code sytax
+\definecolor{LightGray}{gray}{0.9}
+
+\setminted[text]{
+	frame=lines, 
+	breaklines,
+	baselinestretch=1.2,
+	bgcolor=LightGray,
+%	fontsize=\small
+}
+
+\setminted[python]{
+	frame=lines, 
+	breaklines, 
+	linenos,
+	baselinestretch=1.2,
+%	bgcolor=LightGray,
+%	fontsize=\small
+}
+
+\begin{document}
+\maketitle % Insert title
+\thispagestyle{fancy} % All pages have headers and footers
+
+
+\section{Introduction}
+\paragraph{} Aim of this practical is to identify where default query processing can be optimized for cost or performance.
+
+\begin{itemize}
+	\item Identify  any scenario , where default query processing can be optimized for cost or performance.
+	\item Specify your goal and type of query for which you are proposing query optimization.
+	\item Implement and compare result with existing approach
+\end{itemize}
+
+\subsection{Purpose}
+If queries are bad, even the best-designed schema will not perform well. Hence queries needs to be well designed for achieving better performance. Query optimization, index optimization, and schema optimization go hand in hand.
+
+\section{Optimize Data Access}
+The most basic cause a query does not perform well is because it’s working with too much data. Some queries just have to analyze through a lot of data and can’t be helped. That’s unusual, though; most bad/time consuming queries can be altered to access less data. To analyze poorly performances query we need to identify:
+\begin{itemize}
+	\item Whether program is retrieving more data than you need (accessing too many rows or columns)
+	\item Whether if SQL server is analyzing the rows more than it needs.
+\end{itemize}
+
+\subsection{Querying Non Existing Data?}
+Some queries ask for more data than they need and then throw some of it away. This demands extra work of the SQL server, adds network overhead, and consumes memory and CPU resources on the application server.
+\subsubsection{Fetching more rows than needed}
+One common mistake is assuming that SQL provides results on demand, rather than calculating and returning the full result set. We often see this in applications designed by people familiar with other database systems. These developers are used to techniques such as issuing a SELECT statement that returns many rows, then \textbf{fetching the first N rows}, and closing the result set. The general myth is that SQL will provide them with these first N rows and stop executing the query, but what SQL really does is \textbf{generate the complete result set}. The client library then fetches all the data and discards most of it.
+
+The solution is to add a LIMIT clause to the query.
+
+\subsubsection{Fetching all columns from a multi-table join}
+By Selecting only needed columns we can decrease data access require to perform query.
+
+Unoptimized query:
+\begin{minted}{sql}
+SELECT * FROM moviedb.actor
+INNER JOIN moviedb.film_actor USING(actor_id)
+INNER JOIN moviedb.film USING(film_id)
+WHERE moviedb.film.title = 'The Avengers';
+\end{minted}
+
+Optimized query:
+\begin{minted}{sql}
+SELECT moviedb.actor.* FROM moviedb.actor
+INNER JOIN moviedb.film_actor USING(actor_id)
+INNER JOIN moviedb.film USING(film_id)
+WHERE moviedb.film.title = 'The Avengers';
+\end{minted}
+
+Some DBAs ban \textbf{SELECT *} universally because of this fact, and to reduce the risk of problems when someone alters the table’s column list.
+
+\subsection{Examining too much data?}
+Once you’re sure your queries retrieve only the data you need, you can look for queries that examine too much data while generating results. In SQL, the simplest query cost metrics are:
+\begin{itemize}
+	\item Execution time
+	\item Number of rows examined
+	\item Number of rows returned
+\end{itemize}
+None of these metrics is a perfect way to measure query cost, but they reflect roughly how much data must access internally to execute a query and translate approximately into how fast the query runs. All three metrics are logged in the slow query log, so looking at the slow query log is one of the best ways to find queries that examine too much data.
+
+\subsection{Optimize Like Statements With Union Clause}
+Sometimes, you may want to run queries using the comparison operator 'or' on different fields or columns in a particular table. When the 'or' keyword is used too much in where clause, it might make the Query optimizer to incorrectly choose a full table scan to retrieve a record.
+
+A union clause can make the query run faster especially if you have an index that can optimize one side of the query and a different index to optimize the other side.
+
+consider a case where you are running the below query with the '$film_actor.first_name$' and '$film_actor.first_name$' indexed
+\begin{minted}{sql}
+SELECT * from moviedb 
+WHERE film_actor.first_name LIKE  'Robert%'  or film_actor.last_name LIKE 'Robert%' ;
+\end{minted}
+The query above can run far much slower compared to the query written below which uses a union operator merge the results of 2 separate fast queries that takes advantage of the indexes.
+\begin{minted}{sql}
+SELECT from moviedb 
+WHERE film_actor.first_name like  'Robert%' 
+UNION ALL SELECT from moviedb 
+WHERE film_actor.last_name like  'Robert%' ;
+\end{minted}
+
+
+\section{Summary}
+Though fetching more data degrade performance; asking for more data than really needed is not always bad. In many cases it lets the developer use the same bit of code in more than one place. That’s a reasonable consideration, as long as one is aware of what it costs in terms of performance. 
+\\It may also be useful to retrieve more data than you actually need if you use some type of caching in your application, or if you have another benefit in mind. Fetching and caching full objects may be preferable to running many separate queries that retrieve only parts of the object.
+
+Detailed explanation of optimizing MYSQL queries can be found \href{https://www.oreilly.com/library/view/high-performance-mysql/9780596101718/ch04.html}{here} and for PostgreSQL it can be found at \href{https://wiki.postgresql.org/wiki/Introduction_to_VACUUM,_ANALYZE,_EXPLAIN,_and_COUNT}{this} link.
+
+\end{document}
