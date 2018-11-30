@@ -168,6 +168,7 @@ class Iterator(object):
             # read sublist from each block and output desire result
             total_results = 0
             total_ignored = 0
+            last_read = None
             # for line in open(self.write_back_path, "r"):
             while any(phase2_data_one):  # loop over data from whose you will perform minus operator
                 temp_lis_one = list(filter(None, phase2_data_one)) if None in phase2_data_one else phase2_data_one
@@ -205,26 +206,28 @@ class Iterator(object):
                                 # file/sublist has nothing to load/read
                                 del partition_ptr_lis[chunk_no]
                                 del phase2_data[chunk_no]
-                        if min_one != min_two:
-                            if not only_summary:
-                                print(min_one)
-                            if output_write:
-                                output_obj.write(min_one + "\n")
-                            total_ignored += 1
-                else:
-                    # if there is data in first data table but no data in second data table
-                    if min_one:
+                    if min_one != min_two and min_one != last_read:
                         if not only_summary:
                             print(min_one)
                         if output_write:
                             output_obj.write(min_one + "\n")
+                        total_results += 1
+                    last_read = min_one
+                else:
+                    # if there is data in first data table but no data in second data table
                     if next_record_one:
                         phase2_data_one[chunk_no_one] = next_record_one.split(self.separator)[_idx]
                     else:
                         # file/sublist has nothing to load/read
                         del partition_ptr_lis_one[chunk_no_one]
                         del phase2_data_one[chunk_no_one]
-            self.summary(self.total_records - total_ignored, self.total_records)
+                    if min_one:
+                        if not only_summary:
+                            print(min_one)
+                        if output_write:
+                            output_obj.write(min_one + "\n")
+                        total_results += 1
+            self.summary(total_results, self.total_records)
         else:
             # can not proceed all given blocks with memory constraint
             print("Require more than two pass to handle this large data")
@@ -236,4 +239,5 @@ if __name__ == "__main__":
     table = Iterator(attribute_tuple=("name", "ssn", "gender", "job", "company", "address"),
                      data_one_path="data_two.dbf",
                      data_two_path="data_one.dbf")
+    # table.difference_of(on_attribute="name", only_summary=True, output_write=True)
     table.difference_of(on_attribute="name", only_summary=False, output_write=True)
